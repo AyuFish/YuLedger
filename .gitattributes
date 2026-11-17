@@ -1,0 +1,2 @@
+# 保持字节原样：.sh 必须 LF、start.bat 必须 CRLF、.ps1 需保留 UTF-8 BOM
+* -text
