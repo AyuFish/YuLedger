@@ -1,0 +1,13 @@
+# Docker 构建上下文（compose 用父目录作为 context）时忽略这些
+.git
+.gitignore
+.workbuddy
+target
+backup
+data
+docs
+*.db
+*.db-*
+*.log
+*.zip
+*.tar.gz
