@@ -26,7 +26,7 @@
 
 源码与发行版：<https://gitee.com/c-s-y/yuledger>，采用 MIT License。
 
-Android 发行包自 1.0.7 起按 **`YuLedger-<版本>-arm64-v8a.apk`** 命名（例如 `YuLedger-1.0.7-arm64-v8a.apk`）；YuLedger 读作 `/juˈledʒər/`，就是「你的账本」。交付文件名变了，应用身份与数据路径不变。
+Android 发行包自 1.0.7 起按 **`YuLedger-<版本>-<abi>.apk`** 命名：默认包 `YuLedger-1.0.8-arm64-v8a.apk`（覆盖绝大多数真机），另有 `YuLedger-1.0.8-universal.apk`（含 arm64-v8a / armeabi-v7a / x86_64 / x86 四种架构，覆盖 32 位老机与模拟器）。YuLedger 读作 `/juˈledʒər/`，就是「你的账本」。**1.0.8 起 Android 包名由 `cn.etsdash.app` 改为 `cn.yuledger.app`、签名别名改为 `yuledger`（证书指纹不变）**：新旧包会作为两个独立应用并存，首次启动新版会自动从旧包名的外部目录迁移 `ledger.db`；确认账本无误后可自行卸载旧版。`ledger.db` 文件名与桌面端数据目录保持不变。
 
 ## 截图
 
