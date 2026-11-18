@@ -2058,6 +2058,12 @@ try {
                 <button class="ghost-btn is-risk cap-act" id="clearBtn" type="button" data-tip-name="清空记录" data-tip="清空全部流水，账户恢复为 5 个初始账户且余额全部归零；自建账户会被移除，需二次确认，建议先导出备份。">清空记录</button>
               </div>
             </div>
+            <div class="cap-sec is-risk" id="uninstallSec" hidden>
+              <p class="cap-divider is-risk">应用管理 · 仅设备版</p>
+              <div class="cap-acts">
+                <button class="ghost-btn is-risk cap-act" id="uninstallAppBtn" type="button" data-tip-name="卸载应用" data-tip="调起系统卸载窗口；默认先把账本备份到公共 Download/鱼记备份/，卸载后重装会自动恢复。">卸载应用（默认保留数据）</button>
+              </div>
+            </div>
             <p class="cap-dbpath" id="appDbPath" hidden>账本位置：<span></span></p>
             <input type="file" id="importFile" accept="application/json,.json" hidden>
           </div>
@@ -2544,9 +2550,10 @@ try {
   setTimeout(finishBoot, 4000);
   'use strict';
 
-  /* 设备版（Android APK）标识：UA 里带 ETS-dash-Android/。
+  /* 设备版（Android APK）标识：UA 里带 YuLedger-Android/。
+     同时兼容 1.0.7 及更早的 ETS-dash-Android/，避免旧包内嵌页面识别失效。
      浏览器 / 本地服务 / 桌面端都不带，行为完全不变。 */
-  var IS_APP = /ETS-dash-Android\//.test(navigator.userAgent);
+  var IS_APP = /YuLedger-Android\/|ETS-dash-Android\//.test(navigator.userAgent);
   var ETS = (typeof window.ETS !== 'undefined') ? window.ETS : null;
 
   var FIXED = ['住房', '社保与税费', '订阅与软件'];
@@ -6073,6 +6080,20 @@ try {
         toast('已清空：流水 0 条，5 个初始账户余额均为 0');
       });
   });
+
+  /* 设备版设置里的「卸载应用（默认保留数据）」：浏览器 / 桌面端整段隐藏。
+     点确定才调原生卸载，原生侧会先把 ledger.db 备份到公共 Download/鱼记备份/。 */
+  (function () {
+    var sec = document.getElementById('uninstallSec');
+    var btn = document.getElementById('uninstallAppBtn');
+    if (!sec || !btn || !IS_APP || !ETS || !ETS.uninstallApp) return;
+    sec.hidden = false;
+    btn.addEventListener('click', function () {
+      askConfirm('卸载鱼记？',
+        '点「确定」会先把当前账本备份到公共 Download/鱼记备份/，再调起系统卸载窗口；重装后自动恢复。若不想保留数据，请从系统设置中卸载。',
+        function () { ETS.uninstallApp(true); });
+    });
+  })();
 
   /* 手机长按设置浮窗里的数据按钮：只显示「被按的那个」的说明，不执行操作。
      短按照常点击（危险按钮另有二次确认）；桌面仍用悬浮/聚焦显示说明。 */
