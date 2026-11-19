@@ -25,6 +25,7 @@
     GET    /api/state                  完整账本 { records, accounts, settings, profile }
     PUT    /api/state                  全量写回（单事务，网页保存时调用）
     POST   /api/records                新增 / 更新一条流水
+    POST   /api/reset-db               删除 ledger.db 整组并重建初始库（设置里的「清空记录」）
     DELETE /api/records?id=xxx         删除一条；不带 id 则清空流水
     PUT    /api/settings               更新单个设置项，如 {"key":"saving_goal","value":500000}
     PUT    /api/accounts               新增 / 更新一个账户
@@ -40,6 +41,7 @@ from __future__ import annotations
 
 import argparse
 import email.utils
+import gzip
 import json
 import os
 import re
@@ -66,6 +68,14 @@ RESOURCE_BASE = Path(getattr(sys, "_MEIPASS", None) or Path(__file__).resolve().
 BASE = RESOURCE_BASE
 DB_PATH = BASE / "ledger.db"
 HTML_PATH = RESOURCE_BASE / "index.html"
+
+# 文本资源按 Accept-Encoding 协商 gzip：index.html 约 340 KB，gzip 后通常 60~80 KB，
+# 局域网访问首屏明显更快。小响应与二进制不压缩，避免浪费 CPU。
+GZIP_TYPES = frozenset({
+    "text/html", "text/css", "text/plain", "application/javascript",
+    "application/json", "application/sql", "image/svg+xml",
+})
+GZIP_MIN_BYTES = 512
 
 # 本机应用模式：只绑回环、端口由系统随机分配、每次启动生成一次性 token。
 # 默认关闭，原有 0.0.0.0:8765 的局域网 / NAS 用法完全不变。
@@ -176,6 +186,33 @@ def init_db() -> None:
         con.close()
 
 
+def reset_db() -> dict:
+    """删掉 ledger.db 整组并用 init_db() 重建初始库，返回全新 state。
+
+    与「清空流水」的区别：DELETE 只清空表、文件仍是旧尺寸；这里是真的把文件删掉
+    再建一个 40KB 左右的新库，连 WAL / SHM / journal 残留一起清掉，不留旧数据页。
+    调用方必须持有 _DB_LOCK，确保删库窗口内没有其它请求持有旧连接。
+    """
+    for suffix in ("", "-wal", "-shm", "-journal"):
+        p = Path(str(DB_PATH) + suffix)
+        try:
+            if p.exists():
+                p.unlink()
+        except OSError as exc:
+            raise OSError(f"删除 {p.name} 失败：{exc}") from exc
+    init_db()
+    con = connect(create=True)
+    try:
+        return read_state(con)
+    finally:
+        con.close()
+
+
+# 所有 DB 请求串行化：reset_db 会先删文件再重建，Windows 上被打开的文件删不掉，
+# 且与其它写请求交错可能让旧快照写进新库，所以所有 /api 读写都进同一把锁。
+_DB_LOCK = threading.RLock()
+
+
 def setting_text(v) -> str:
     """settings 表统一存 TEXT；整数值不要写成 18000.0。"""
     if isinstance(v, (dict, list)):
@@ -262,6 +299,34 @@ def _clean_account(a: dict) -> tuple:
     )
 
 
+# VACUUM 回收阈值：清空后 110/144 页空闲必然触发；日常只删一两条的空页比例极低，不触发，
+# 避免每次记账都重建整个库文件（4022 条时会有明显卡顿）。
+VACUUM_MIN_BYTES = 256 * 1024    # 空闲字节超过 256KB
+VACUUM_MIN_RATIO = 0.20          # 或空闲页占比 >= 20%
+VACUUM_MIN_PAGES = 16            # 且至少 16 页，避免极小库频繁 VACUUM
+
+
+def maybe_vacuum(con: sqlite3.Connection, force: bool = False) -> bool:
+    """空闲页堆积时回收空间（VACUUM）。必须在事务外调用，否则 SQLite 报 "cannot VACUUM from within a transaction"。
+    返回是否真的执行了；任何异常都吞掉，绝不影响账本写入本身。"""
+    if con.in_transaction:
+        return False
+    try:
+        page_size = int(con.execute("PRAGMA page_size").fetchone()[0])
+        page_count = int(con.execute("PRAGMA page_count").fetchone()[0])
+        free = int(con.execute("PRAGMA freelist_count").fetchone()[0])
+        if free <= 0 or page_count <= 0:
+            return False
+        need = (force or free * page_size >= VACUUM_MIN_BYTES
+                or (free >= VACUUM_MIN_PAGES and free / page_count >= VACUUM_MIN_RATIO))
+        if not need:
+            return False
+        con.execute("VACUUM")
+        return True
+    except sqlite3.Error:
+        return False
+
+
 def write_state(con: sqlite3.Connection, data: dict) -> dict:
     """全量替换：一个事务内完成，中途失败会整体回滚。"""
     if not isinstance(data.get("records"), list):
@@ -294,6 +359,9 @@ def write_state(con: sqlite3.Connection, data: dict) -> dict:
     if isinstance(profile, dict):
         rows_s.append(("profile", json.dumps(profile, ensure_ascii=False)))
 
+    # 清空 / 导入都是整本替换；记完账后如果空闲页堆积，在这里一次回收。
+    # 用 with 块外的连接执行（VACUUM 不能在事务里），force=完全清空必定回收。
+    was_cleared = con.execute("SELECT COUNT(*) FROM records").fetchone()[0] > 0 and not rows_r
     with con:
         con.execute("DELETE FROM records")
         con.execute("DELETE FROM accounts")
@@ -307,6 +375,7 @@ def write_state(con: sqlite3.Connection, data: dict) -> dict:
             "INSERT INTO accounts (id,kind,name,note,amount) VALUES (?,?,?,?,?)", rows_a
         )
         con.executemany("INSERT INTO settings (key,value) VALUES (?,?)", rows_s)
+    maybe_vacuum(con, force=was_cleared)
     return read_state(con)
 
 
@@ -852,8 +921,18 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
 
     def _send(self, code: int, body: bytes, ctype: str):
+        # 只对成功的文本响应、且客户端明确接受 gzip 时压缩；带 Vary 头避免缓存混淆。
+        media = ctype.split(";", 1)[0].strip().lower()
+        encoding = None
+        if (code == 200 and len(body) >= GZIP_MIN_BYTES and media in GZIP_TYPES
+                and "gzip" in self.headers.get("Accept-Encoding", "").lower()):
+            body = gzip.compress(body, compresslevel=6)
+            encoding = "gzip"
         self.send_response(code)
         self.send_header("Content-Type", ctype)
+        if encoding:
+            self.send_header("Content-Encoding", encoding)
+            self.send_header("Vary", "Accept-Encoding")
         self.send_header("Content-Length", str(len(body)))
         self._cors()
         self.end_headers()
@@ -898,7 +977,7 @@ class Handler(BaseHTTPRequestHandler):
                              "message": "数据库文件(ledger.db)丢失，请恢复后重启服务重新初始化"})
             return None
 
-    def do_GET(self):
+    def _do_GET(self):
         if not self._app_guard(): return
         parsed = urlparse(self.path)
         path = unquote(parsed.path)
@@ -969,7 +1048,7 @@ class Handler(BaseHTTPRequestHandler):
         self._send(200, target.read_bytes(), ctype)
 
     # ---------------- PUT ----------------
-    def do_PUT(self):
+    def _do_PUT(self):
         if not self._app_guard(): return
         path = unquote(urlparse(self.path).path)
         try:
@@ -1018,13 +1097,21 @@ class Handler(BaseHTTPRequestHandler):
             con.close()
 
     # ---------------- POST ----------------
-    def do_POST(self):
+    def _do_POST(self):
         if not self._app_guard(): return
         path = unquote(urlparse(self.path).path)
         try:
             data = self._body()
         except ValueError as exc:
             return self._json(400, {"error": str(exc)})
+        # 删库重建：必须在任何 connect 之前，否则 Windows 上文件被占用删不掉。
+        # _DB_LOCK 由外层 do_POST 持有，整个删+建过程与其它请求串行。
+        if path == "/api/reset-db":
+            try:
+                state = reset_db()
+            except OSError as exc:
+                return self._json(500, {"error": "reset-failed", "message": str(exc)})
+            return self._json(200, state)
         con = self._safe_connect()
         if con is None:
             return
@@ -1048,7 +1135,7 @@ class Handler(BaseHTTPRequestHandler):
             con.close()
 
     # ---------------- DELETE ----------------
-    def do_DELETE(self):
+    def _do_DELETE(self):
         if not self._app_guard(): return
         parsed = urlparse(self.path)
         path = unquote(parsed.path)
@@ -1064,6 +1151,8 @@ class Handler(BaseHTTPRequestHandler):
                         cur = con.execute("DELETE FROM records WHERE id=?", (rid,))
                     else:
                         cur = con.execute("DELETE FROM records")
+                # 清空流水（不带 id）后回收空间；单条删除只在空闲页堆积时按阈值回收。
+                maybe_vacuum(con, force=(not rid and cur.rowcount > 0))
                 after = read_state(con)
                 audit(con, "DELETE /api/records " + (str(rid) if rid else "ALL"),
                       before, after, self.client_address[0])
@@ -1073,6 +1162,23 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"error": str(exc)})
         finally:
             con.close()
+
+    # ---- 带锁的公开入口：任何请求都不能和「删库重建」交错 ----
+    def do_GET(self):
+        with _DB_LOCK:
+            return self._do_GET()
+
+    def do_PUT(self):
+        with _DB_LOCK:
+            return self._do_PUT()
+
+    def do_POST(self):
+        with _DB_LOCK:
+            return self._do_POST()
+
+    def do_DELETE(self):
+        with _DB_LOCK:
+            return self._do_DELETE()
 
 
 def lan_ips() -> list[str]:
