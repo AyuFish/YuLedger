@@ -32,11 +32,21 @@ try {
     color-scheme:dark;
     --brief-primary:#34D399;
     --brief-accent:#f7f962;
+    --cal-fest:#F5C25B;          /* 节日 / 节气文字专用暖黄（始终黄色，不随收支底色变） */
     --brief-bg:#191e29;
     --brief-surface:#2c3649;
     --brief-text:#E6EDF3;
     --brief-coral:#F97362;      /* 支出/负值：偏橙的珊瑚红 */
     --brief-danger:#FF5A5F;    /* 危险操作：正红警告色，不与支出色混用 */
+    /* 半透明颜色通道（RGB 分量）：老 WebView（如华为 114）对 color-mix(...,transparent)
+       解析有缺陷，会回退成 currentColor 导致黑圈/黑边。rgba(var(--rgb-*), a) 全平台等价可用。 */
+    --rgb-primary:52,211,153;
+    --rgb-accent:247,249,98;
+    --rgb-bg:25,30,41;
+    --rgb-surface:44,54,73;
+    --rgb-text:230,237,243;
+    --rgb-coral:249,115,98;
+    --rgb-danger:255,90,95;
 
     /* 主题相关的辅助变量：浅色主题整块重定义，深色取值保持原观感 */
     --brief-mix:#000;               /* color-mix 里把表面调暗的方向 */
@@ -59,10 +69,10 @@ try {
     --brief-glow:0 0 24px rgba(52,211,153,.18);
 
     /* 流动渐变的色板由 JS 里的 8 个色相桶提供（深浅各一套），见文件末尾 flow 模块 */
-    --brief-muted:color-mix(in srgb, var(--brief-text) 62%, transparent);
-    --brief-muted-2:color-mix(in srgb, var(--brief-text) 42%, transparent);
-    --brief-line:color-mix(in srgb, var(--brief-text) 8%, transparent);
-    --brief-line-strong:color-mix(in srgb, var(--brief-text) 16%, transparent);
+    --brief-muted:rgba(var(--rgb-text),0.62);
+    --brief-muted-2:rgba(var(--rgb-text),0.42);
+    --brief-line:rgba(var(--rgb-text),0.08);
+    --brief-line-strong:rgba(var(--rgb-text),0.16);
 
     --tone-1:#34D399;
     --tone-2:#2FB98E;
@@ -83,9 +93,16 @@ try {
     --brief-bg:#f3f5f8;
     --brief-surface:#ffffff;
     --brief-text:#1c2634;
-    --brief-accent:#9aa80d;   /* 黄色 #f7f962 在白底上看不清，浅色下整体加深（结余折线/图例/节日等） */
+    --brief-accent:#9aa80d;   /* 黄色 #f7f962 在白底上看不清，浅色下整体加深（结余折线/图例等） */
+    --cal-fest:#9A6C08;       /* 节日黄在白底上加深为金褐，既看得出是黄色又能读清 */
     --brief-coral:#E85A47;
     --brief-danger:#D92D20;    /* 白底上加深，保证正红仍可读 */
+    --rgb-bg:243,245,248;
+    --rgb-surface:255,255,255;
+    --rgb-text:28,38,52;
+    --rgb-accent:154,168,13;
+    --rgb-coral:232,90,71;
+    --rgb-danger:217,45,32;
 
     --brief-mix:#fff;
     --brief-surface-2:#ffffff;
@@ -93,9 +110,16 @@ try {
     --brief-border-soft:rgba(28,38,52,.28);
     --brief-scroll:rgba(28,38,52,.24);
 
-    --brief-shadow:0 8px 24px rgba(31,45,66,.10);
-    --brief-ring:inset 0 0 0 1px rgba(28,38,52,.07);
+    --brief-shadow:0 6px 20px rgba(31,45,66,.12);
+    --brief-ring:inset 0 0 0 1px rgba(28,38,52,.12);
     --brief-glow:0 0 24px rgba(16,150,111,.10);
+
+    /* 浅色下把次级文字与分隔线整体加深一档：白底上 0.62/0.42 太淡，
+       小字号（农历、表头、备注）尤其糊，0.70/0.55 才够清晰 */
+    --brief-muted:rgba(28,38,52,0.70);
+    --brief-muted-2:rgba(28,38,52,0.55);
+    --brief-line:rgba(28,38,52,0.14);
+    --brief-line-strong:rgba(28,38,52,0.30);
 
     /* 环形图的第 6 段直接跟随加深后的强调色 */
     --tone-6:var(--brief-accent);
@@ -103,13 +127,37 @@ try {
 
   /* 浅色主题下少数组件的局部微调（深色下不生效） */
   html[data-theme="light"] .flow-tag-date.is-fest{
-    color:#A9770F;border-color:rgba(169,119,15,.45);background:rgba(169,119,15,.08);
+    color:var(--cal-fest);border-color:rgba(154,108,8,.45);background:rgba(154,108,8,.08);
   }
   html[data-theme="light"] .tornado-axis{
     background:linear-gradient(180deg,rgba(28,38,52,.5),rgba(28,38,52,.26));
     box-shadow:0 0 6px rgba(28,38,52,.15);
   }
   html[data-theme="light"] .tornado-axis::after{border-top-color:rgba(28,38,52,.45)}
+
+  /* 浅色主题下的月历：白底上看不见的粉/绿浅底、农历小字与选中格白字都要重设。
+     net-pos / net-neg 的农历色原来用 color-mix 混出，白底上糊成一片浅粉，
+     这里直接给实色（深绿 / 深红 / 深橄榄），对比度够且不依赖 color-mix。 */
+  html[data-theme="light"] .cal-cell{color:rgba(28,38,52,.68)}
+  html[data-theme="light"] .cal-cell:hover{background:#eef2f7}
+  html[data-theme="light"] .cal-cell.is-future{color:rgba(28,38,52,.34)}
+  html[data-theme="light"] .cal-cell.net-pos{background:rgba(16,150,111,.10);border-color:rgba(16,150,111,.45)}
+  html[data-theme="light"] .cal-cell.net-pos .cal-sub{color:#0B7A57}
+  html[data-theme="light"] .cal-cell.net-neg{background:rgba(232,90,71,.10);border-color:rgba(232,90,71,.45)}
+  html[data-theme="light"] .cal-cell.net-neg .cal-sub{color:#B23A26}
+  html[data-theme="light"] .cal-cell.net-flat{background:rgba(154,168,13,.10);border-color:rgba(154,168,13,.45)}
+  html[data-theme="light"] .cal-cell.net-flat .cal-sub{color:#6E7A00}
+  html[data-theme="light"] .cal-cell.is-today{box-shadow:inset 0 0 0 1.5px rgba(154,168,13,.85)}
+  html[data-theme="light"] .cal-cell.is-sel{background:#DCEBFF;border-color:#2F7FE0;color:#0F3F73;box-shadow:0 0 0 1px rgba(47,127,224,.28)}
+  html[data-theme="light"] .cal-cell.is-sel .cal-sub{color:#2A639F}
+  html[data-theme="light"] .cal-cell .cal-sub.is-fest,
+  html[data-theme="light"] .cal-cell.is-sel .cal-sub.is-fest{color:var(--cal-fest)}
+  html[data-theme="light"] .cal-stat{background:rgba(28,38,52,.05)}
+  html[data-theme="light"] .cal-foot{border-top-color:rgba(28,38,52,.16)}
+  /* 记账弹窗的日期面板：空白补位日与选中日同样需要加深 */
+  html[data-theme="light"] .dpop-day.is-out{color:rgba(28,38,52,.42)}
+  html[data-theme="light"] .dpop-day.is-sel{background:#DCEBFF;border-color:#2F7FE0;color:#0F3F73}
+  html[data-theme="light"] .dpop-day:hover:not(:disabled){background:#eaf3ff}
 
   *,*::before,*::after{box-sizing:border-box}
   html{-webkit-text-size-adjust:100%}
@@ -163,7 +211,7 @@ try {
     position:sticky;
     top:0;
     z-index:20;
-    background:color-mix(in srgb, var(--brief-bg) 84%, transparent);
+    background:rgba(var(--rgb-bg),0.84);
     backdrop-filter:blur(14px);
     -webkit-backdrop-filter:blur(14px);
     border-bottom:1px solid var(--brief-line);
@@ -186,7 +234,7 @@ try {
   .brand-en{font-size:.86em;font-weight:600;color:var(--brief-muted);letter-spacing:.04em}
   .brand-text{font-size:11.5px;color:var(--brief-muted)}
   /* 所有权声明已移到页脚，顶栏不再显示用户名 */
-  .brand-sep{color:color-mix(in srgb, var(--brief-text) 26%, transparent);font-size:13px;line-height:1;user-select:none;padding-inline:2px}
+  .brand-sep{color:rgba(var(--rgb-text),0.26);font-size:13px;line-height:1;user-select:none;padding-inline:2px}
 
   .controls{display:flex;flex-direction:column;align-items:flex-end;gap:4px;margin-inline:auto}
   .capsule{
@@ -206,7 +254,7 @@ try {
     border-radius:var(--brief-radius-pill);
     transition:background .16s ease;
   }
-  .sel:hover{background:color-mix(in srgb, var(--brief-text) 7%, transparent)}
+  .sel:hover{background:rgba(var(--rgb-text),0.07)}
   .sel-label{font-size:10.5px;letter-spacing:.1em;color:var(--brief-muted-2)}
   .sel-wrap{position:relative;display:inline-flex;align-items:center}
   /* 原生 select 只保存值/选项，不再显示系统原生下拉；展示与交互交给自定义浮窗 */
@@ -238,7 +286,7 @@ try {
   @keyframes sel-pop-in{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
   .sel-pop-list{
     display:flex;flex-direction:column;gap:2px;max-height:min(380px,70vh);overflow-y:auto;
-    scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--brief-primary) 30%,transparent) transparent;
+    scrollbar-width:thin;scrollbar-color:rgba(var(--rgb-primary),0.3) transparent;
   }
   .sel-opt{
     display:flex;align-items:center;gap:8px;width:100%;flex:none;
@@ -246,10 +294,10 @@ try {
     color:var(--brief-muted);font-family:inherit;font-size:11.5px;text-align:left;
     white-space:nowrap;cursor:pointer;transition:background .16s ease,color .16s ease;
   }
-  .sel-opt:hover{background:color-mix(in srgb,var(--brief-text) 7%,transparent);color:var(--brief-text)}
+  .sel-opt:hover{background:rgba(var(--rgb-text),0.07);color:var(--brief-text)}
   .sel-opt.is-on{
     color:var(--brief-primary);font-weight:700;
-    background:color-mix(in srgb,var(--brief-primary) 12%,transparent);
+    background:rgba(var(--rgb-primary),0.12);
   }
   .sel-opt-main{flex:1;min-width:0}
   .sel-opt-count{font-style:normal;font-size:10px;color:var(--brief-muted-2);font-variant-numeric:tabular-nums}
@@ -267,7 +315,7 @@ try {
     cursor:pointer;transition:color .16s ease,border-color .16s ease,background .16s ease;
   }
   .cap-icon svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-  .cap-icon:hover,.cap-icon[aria-expanded="true"]{color:var(--brief-primary);border-color:color-mix(in srgb,var(--brief-primary) 45%,transparent);background:color-mix(in srgb,var(--brief-primary) 10%,transparent)}
+  .cap-icon:hover,.cap-icon[aria-expanded="true"]{color:var(--brief-primary);border-color:rgba(var(--rgb-primary),0.45);background:rgba(var(--rgb-primary),0.1)}
   .cap-icon:focus-visible{outline:2px solid var(--brief-primary);outline-offset:2px}
   .cap-icon.is-busy svg{animation:cap-spin .8s linear infinite}
   @keyframes cap-spin{to{transform:rotate(360deg)}}
@@ -305,11 +353,11 @@ try {
   .cap-goal-row input:focus-visible{outline:2px solid var(--brief-primary);outline-offset:1px}
   .cap-pop-save{
     flex:none;padding:0 10px;height:28px;border-radius:8px;cursor:pointer;
-    border:1px solid color-mix(in srgb,var(--brief-primary) 55%,transparent);
-    background:color-mix(in srgb,var(--brief-primary) 14%,transparent);
+    border:1px solid rgba(var(--rgb-primary),0.55);
+    background:rgba(var(--rgb-primary),0.14);
     color:var(--brief-primary);font-family:inherit;font-size:11.5px;font-weight:600;
   }
-  .cap-pop-save:hover{background:color-mix(in srgb,var(--brief-primary) 24%,transparent)}
+  .cap-pop-save:hover{background:rgba(var(--rgb-primary),0.24)}
   /* 储蓄目标默认只读：去掉输入框外观，看起来只是一段数值，避免误改 */
   .cap-goal-row input[readonly]{
     border-color:transparent;background:transparent;padding:0 4px;
@@ -317,21 +365,21 @@ try {
   }
   .cap-goal-row input[readonly]:focus-visible{outline:0}
   .cap-goal-row input:not([readonly]){
-    border-color:color-mix(in srgb,var(--brief-primary) 55%,transparent);
+    border-color:rgba(var(--rgb-primary),0.55);
   }
   .cap-goal-edit{
     flex:none;padding:0 10px;height:28px;border-radius:8px;cursor:pointer;
     border:1px solid var(--brief-line-strong);background:transparent;color:var(--brief-muted);
     font-family:inherit;font-size:11.5px;font-weight:600;
   }
-  .cap-goal-edit:hover{color:var(--brief-text);border-color:color-mix(in srgb,var(--brief-primary) 45%,transparent)}
+  .cap-goal-edit:hover{color:var(--brief-text);border-color:rgba(var(--rgb-primary),0.45)}
   .cap-goal-edit:focus-visible{outline:2px solid var(--brief-primary);outline-offset:1px}
   .cap-goal-cancel{
     flex:none;width:26px;height:28px;padding:0;border-radius:8px;cursor:pointer;
     border:1px solid var(--brief-line-strong);background:transparent;color:var(--brief-muted-2);
     font-family:inherit;font-size:12px;line-height:1;
   }
-  .cap-goal-cancel:hover{color:var(--brief-coral);border-color:color-mix(in srgb,var(--brief-coral) 45%,transparent)}
+  .cap-goal-cancel:hover{color:var(--brief-coral);border-color:rgba(var(--rgb-coral),0.45)}
   .cap-goal-cancel:focus-visible{outline:2px solid var(--brief-primary);outline-offset:1px}
   /* 编辑/保存/取消互斥显示，显式保证 hidden 生效 */
   .cap-goal-row button[hidden]{display:none}
@@ -358,8 +406,8 @@ try {
   .cap-theme-btn:hover{color:var(--brief-text)}
   .cap-theme-btn:focus-visible{outline:2px solid var(--brief-primary);outline-offset:1px}
   .cap-theme-btn.is-on{
-    border-color:color-mix(in srgb,var(--brief-primary) 55%,transparent);
-    background:color-mix(in srgb,var(--brief-primary) 14%,transparent);
+    border-color:rgba(var(--rgb-primary),0.55);
+    background:rgba(var(--rgb-primary),0.14);
     color:var(--brief-primary);
   }
   .cap-switch-input{position:absolute;opacity:0;width:0;height:0}
@@ -373,17 +421,33 @@ try {
     background:var(--brief-muted-2);transition:transform .18s ease,background .18s ease;
   }
   .cap-switch-input:checked + .cap-switch{
-    background:color-mix(in srgb,var(--brief-primary) 26%,transparent);
-    border-color:color-mix(in srgb,var(--brief-primary) 55%,transparent);
+    background:rgba(var(--rgb-primary),0.26);
+    border-color:rgba(var(--rgb-primary),0.55);
   }
   .cap-switch-input:checked + .cap-switch::after{transform:translateX(15px);background:var(--brief-primary)}
   .cap-switch-input:focus-visible + .cap-switch{outline:2px solid var(--brief-primary);outline-offset:2px}
   /* 连续两个开关共用一条分隔线，避免重复横线显得零碎 */
   .cap-switch-row + .cap-switch-row{margin-top:0;padding-top:7px;border-top:0}
-  /* 设备版账本路径：让用户不用去翻 /data/data 也能找到 ledger.db */
-  .cap-dbpath{margin:10px 0 0;font-size:10.5px;line-height:1.5;color:var(--brief-muted);
+  /* 卸载开关下方的一行说明：随开 / 关切换，字号比正文小 */
+  .cap-hint{margin:6px 0 0;font-size:10px;line-height:1.55;color:var(--brief-muted)}
+  /* 卸载保留数据：开关左侧的状态标签（开=绿 / 关=红），与开关同一行 */
+  .cap-keep-state{margin-left:auto;margin-right:9px;font-size:11px;font-weight:700;
+    letter-spacing:.02em;white-space:nowrap;color:var(--brief-primary)}
+  .cap-keep-state.is-off{color:var(--brief-danger)}
+  /* 账本留存说明：不用文本框（用户嫌丑），直接正文排版——引导语 / 路径独占一行 / 圆点说明。
+     三行统一用次级灰字（跟随白/黑主题自动变浅变亮），只有「不会 / 将会」用收入绿 / 支出红点题。 */
+  .keep-info{margin:9px 0 0;padding:0;background:none;border:0}
+  .keep-info-lead{margin:0;font-size:10.5px;line-height:1.55;color:var(--brief-muted)}
+  .keep-info-path{margin:1px 0 7px;font-size:10.5px;line-height:1.55;color:var(--brief-muted);
     word-break:break-all;user-select:text;-webkit-user-select:text}
-  .cap-dbpath span{color:var(--brief-primary)}
+  .keep-info-effect{margin:0;font-size:10.5px;line-height:1.7;color:var(--brief-muted);
+    display:flex;align-items:flex-start;gap:6px}
+  .keep-info-effect .ki-dot{flex:0 0 auto;width:7px;height:7px;border-radius:50%;
+    margin-top:5px;background:var(--brief-primary);box-shadow:0 0 0 3px rgba(var(--rgb-primary),.16)}
+  .keep-info-effect.is-off .ki-dot{background:var(--brief-danger);
+    box-shadow:0 0 0 3px rgba(var(--rgb-danger),.16)}
+  .keep-info-effect .ki-hi{font-weight:700;color:var(--brief-primary)}
+  .keep-info-effect.is-off .ki-hi{color:var(--brief-danger)}
   /* 统计区间 / 数据源 / 授时来源：从顶栏胶囊下方移到内容区顶部，左对齐 */
   .status-line{font-size:11px;color:var(--brief-muted-2);letter-spacing:.02em;text-align:left;margin:0 0 10px}
 
@@ -419,7 +483,7 @@ try {
     line-height:1.5;
     font-weight:500;
     letter-spacing:-.01em;
-    color:color-mix(in srgb, var(--brief-text) 92%, transparent);
+    color:rgba(var(--rgb-text),0.92);
   }
   .hero-hook b{color:var(--brief-primary);text-shadow:0 0 24px rgba(52,211,153,.35)}
     .hero-hook em{color:var(--brief-coral);font-weight:600}
@@ -445,19 +509,19 @@ try {
   .sv-value{
     font-family:var(--brief-font-heading);
     font-size:clamp(1rem,1.5vw,1.22rem);font-weight:700;letter-spacing:-.03em;line-height:1;
-    color:var(--brief-primary);text-shadow:0 0 22px color-mix(in srgb,var(--brief-primary) 30%,transparent);
+    color:var(--brief-primary);text-shadow:0 0 22px rgba(var(--rgb-primary),0.3);
   }
-  .sv-value.is-neg{color:var(--brief-coral);text-shadow:0 0 22px color-mix(in srgb,var(--brief-coral) 26%,transparent)}
+  .sv-value.is-neg{color:var(--brief-coral);text-shadow:0 0 22px rgba(var(--rgb-coral),0.26)}
   /* 完成百分比靠卡片右端，与左侧「当前存款」标签左右对称 */
   .sv-pct{position:absolute;right:0;top:0;font-size:10px;font-weight:700;letter-spacing:.02em;color:var(--brief-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
-  .sv-track{position:relative;z-index:2;height:6px;border-radius:var(--brief-radius-sm);background:color-mix(in srgb,var(--brief-text) 9%,transparent)}
+  .sv-track{position:relative;z-index:2;height:6px;border-radius:var(--brief-radius-sm);background:rgba(var(--rgb-text),0.09)}
   .sv-fill{
     position:absolute;left:0;top:0;bottom:0;width:0;border-radius:inherit;
-    background:linear-gradient(90deg,color-mix(in srgb,var(--brief-primary) 46%,transparent),var(--brief-primary));
-    box-shadow:0 0 14px color-mix(in srgb,var(--brief-primary) 42%,transparent);
+    background:linear-gradient(90deg,rgba(var(--rgb-primary),0.46),var(--brief-primary));
+    box-shadow:0 0 14px rgba(var(--rgb-primary),0.42);
     transition:width .45s cubic-bezier(.4,0,.2,1);
   }
-    .sv-fill.is-over{background:linear-gradient(90deg,color-mix(in srgb,var(--brief-accent) 50%,transparent),var(--brief-accent));box-shadow:0 0 14px color-mix(in srgb,var(--brief-accent) 42%,transparent)}
+    .sv-fill.is-over{background:linear-gradient(90deg,rgba(var(--rgb-accent),0.5),var(--brief-accent));box-shadow:0 0 14px rgba(var(--rgb-accent),0.42)}
   /* 储蓄目标 4 等分阶段节点：0 / 25% / 50% / 75% / 100%，金额按目标换算 */
   .sv-nodes{position:absolute;inset:0}
   .sv-node{
@@ -465,7 +529,7 @@ try {
     width:12px;height:12px;border-radius:50%;
     /* 不用深色外圈：旧版的 0 0 0 2px var(--brief-bg) 在每个点周围形成一圈黑环 */
     background:color-mix(in srgb,var(--brief-text) 16%,var(--brief-surface));
-    border:2px solid color-mix(in srgb,var(--brief-text) 34%,transparent);
+    border:2px solid rgba(var(--rgb-text),0.34);
     box-shadow:none;cursor:default;
     transition:background .3s ease,border-color .3s ease,box-shadow .3s ease;
   }
@@ -475,7 +539,7 @@ try {
   .sv-node.is-done{
     background:radial-gradient(circle at 34% 30%,color-mix(in srgb,#fff 45%,var(--brief-primary)),var(--brief-primary) 74%);
     border-color:var(--brief-primary);
-    box-shadow:0 0 0 3px color-mix(in srgb,var(--brief-primary) 20%,transparent),0 0 12px color-mix(in srgb,var(--brief-primary) 55%,transparent);
+    box-shadow:0 0 0 3px rgba(var(--rgb-primary),0.2),0 0 12px rgba(var(--rgb-primary),0.55);
   }
   .sv-node::after{
     content:attr(data-amt);
@@ -565,8 +629,8 @@ try {
     transition:border-color .25s ease,background .25s ease,box-shadow .25s ease;
   }
   .ae-shell.is-open{
-    border-color:color-mix(in srgb,var(--brief-primary) 55%,transparent);
-    box-shadow:0 0 0 3px color-mix(in srgb,var(--brief-primary) 10%,transparent);
+    border-color:rgba(var(--rgb-primary),0.55);
+    box-shadow:0 0 0 3px rgba(var(--rgb-primary),0.1);
   }
   /* 胶囊（铅笔 + 文字）就是同一个按钮：点文字展开 / 收起，不要箭头，状态靠文字区分 */
   .ae-cap{
@@ -593,12 +657,12 @@ try {
   }
   .ae-body input,.ae-pick{
     height:22px;box-sizing:border-box;padding:0 9px;
-    color:var(--brief-text);background:color-mix(in srgb,var(--brief-text) 8%,transparent);
+    color:var(--brief-text);background:rgba(var(--rgb-text),0.08);
     border:1px solid transparent;border-radius:999px;
     font-family:inherit;font-size:11px;letter-spacing:0;
   }
   .ae-body input::placeholder{color:var(--brief-muted-2)}
-  .ae-body input:focus,.ae-pick:focus-visible{outline:none;border-color:var(--brief-primary);box-shadow:0 0 0 2px color-mix(in srgb,var(--brief-primary) 16%,transparent)}
+  .ae-body input:focus,.ae-pick:focus-visible{outline:none;border-color:var(--brief-primary);box-shadow:0 0 0 2px rgba(var(--rgb-primary),0.16)}
   .ae-pick{display:inline-flex;align-items:center;gap:6px;width:138px;cursor:pointer;text-align:left}
   .ae-pick-txt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .ae-pick svg{width:10px;height:10px;flex:none;opacity:.65}
@@ -613,10 +677,10 @@ try {
   .ae-amt{
     display:inline-flex;align-items:center;flex:none;gap:3px;
     height:22px;box-sizing:border-box;padding:0 9px;
-    background:color-mix(in srgb,var(--brief-text) 8%,transparent);
+    background:rgba(var(--rgb-text),0.08);
     border:1px solid transparent;border-radius:999px;
   }
-  .ae-amt:focus-within{border-color:var(--brief-primary);box-shadow:0 0 0 2px color-mix(in srgb,var(--brief-primary) 16%,transparent)}
+  .ae-amt:focus-within{border-color:var(--brief-primary);box-shadow:0 0 0 2px rgba(var(--rgb-primary),0.16)}
   .ae-yen{flex:none;font-size:11px;font-weight:600;line-height:1;color:var(--brief-muted)}
   .ae-amt input{
     width:66px;height:100%;padding:0;border:0;box-shadow:none!important;outline:none!important;
@@ -631,7 +695,7 @@ try {
     font-family:inherit;font-size:10.5px;letter-spacing:.02em;cursor:pointer;
     transition:color .16s ease,border-color .16s ease,background .16s ease;
   }
-  .ae-mini:hover{color:var(--brief-primary);border-color:color-mix(in srgb,var(--brief-primary) 50%,transparent)}
+  .ae-mini:hover{color:var(--brief-primary);border-color:rgba(var(--rgb-primary),0.5)}
   .ae-mini:focus-visible{outline:2px solid var(--brief-primary);outline-offset:2px}
   .ae-mini:disabled{opacity:.4;cursor:not-allowed}
   .ae-mini.is-primary{background:var(--brief-primary);border-color:var(--brief-primary);color:#08231B;font-weight:700}
@@ -639,13 +703,13 @@ try {
   /* 删除是危险操作：常驻警告红（--brief-danger），不用支出的珊瑚红 --brief-coral */
   .ae-mini.is-risk{
     color:var(--brief-danger);
-    border-color:color-mix(in srgb,var(--brief-danger) 48%,transparent);
-    background:color-mix(in srgb,var(--brief-danger) 9%,transparent);
+    border-color:rgba(var(--rgb-danger),0.48);
+    background:rgba(var(--rgb-danger),0.09);
   }
   .ae-mini.is-risk:hover{
     color:var(--brief-danger);
     border-color:var(--brief-danger);
-    background:color-mix(in srgb,var(--brief-danger) 18%,transparent);
+    background:rgba(var(--rgb-danger),0.18);
   }
   .ae-mini.is-risk:focus-visible{outline-color:var(--brief-danger)}
   .ae-mini[hidden]{display:none}
@@ -662,14 +726,14 @@ try {
     padding:6px 8px;border:0;border-radius:8px;background:transparent;
     color:var(--brief-text);font-family:inherit;font-size:11.5px;text-align:left;cursor:pointer;
   }
-  .ae-opt:hover{background:color-mix(in srgb,var(--brief-primary) 12%,transparent)}
-  .ae-opt.is-sel{background:color-mix(in srgb,var(--brief-primary) 16%,transparent)}
+  .ae-opt:hover{background:rgba(var(--rgb-primary),0.12)}
+  .ae-opt.is-sel{background:rgba(var(--rgb-primary),0.16)}
   .ae-opt .flow-ico{width:22px;height:22px;border-width:1px}
   .ae-opt .flow-ico svg{width:12px;height:12px}
   .ae-opt .flow-ico .ico-char{font-size:10px}
   .ae-opt-plus{
     width:22px;height:22px;flex:none;display:grid;place-items:center;border-radius:50%;
-    border:1px dashed color-mix(in srgb,var(--brief-primary) 55%,transparent);
+    border:1px dashed rgba(var(--rgb-primary),0.55);
     color:var(--brief-primary);font-size:13px;line-height:1;
   }
   .ae-opt-t{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -723,8 +787,8 @@ try {
     font-size:11px;font-weight:700;letter-spacing:.02em;
     padding:2px 9px;border-radius:var(--brief-radius-pill);
   }
-  .tag.up{color:var(--brief-primary);background:color-mix(in srgb, var(--brief-primary) 14%, transparent)}
-  .tag.warn{color:var(--brief-coral);background:color-mix(in srgb, var(--brief-coral) 14%, transparent)}
+  .tag.up{color:var(--brief-primary);background:rgba(var(--rgb-primary),0.14)}
+  .tag.warn{color:var(--brief-coral);background:rgba(var(--rgb-coral),0.14)}
   .kpi-note{
     margin-top:14px;padding-top:12px;
     border-top:1px solid var(--brief-line);
@@ -783,7 +847,7 @@ try {
   .legend .sw-net{width:16px;height:2px;border-radius:2px;background:var(--brief-accent)}
               .chart-svg{display:block;width:100%;height:auto}
     .chart-svg .grid line{stroke:var(--brief-line);stroke-width:1;stroke-dasharray:2 5}
-    .chart-svg .zero{stroke:color-mix(in srgb, var(--brief-text) 76%, transparent);stroke-width:2.6}
+    .chart-svg .zero{stroke:rgba(var(--rgb-text),0.76);stroke-width:2.6}
   .chart-svg .axis-line{stroke:var(--brief-line-strong);stroke-width:1.4}
   .chart-svg .axis-arrow{fill:currentColor}
   .chart-svg .axis-arrow.is-up{color:var(--chart-inc)}
@@ -791,7 +855,7 @@ try {
   .chart-svg .axis text{fill:var(--brief-muted-2);font-size:10.5px;font-family:var(--brief-font-body)}
   .chart-svg .axis text.is-pos{fill:var(--chart-inc);fill-opacity:.9}
   .chart-svg .axis text.is-neg{fill:var(--chart-exp);fill-opacity:.9}
-      .chart-svg .axis text.is-zero{fill:color-mix(in srgb, var(--brief-text) 72%, transparent);font-weight:700}
+      .chart-svg .axis text.is-zero{fill:rgba(var(--rgb-text),0.72);font-weight:700}
   .chart-svg .axis.x text{fill:var(--brief-muted);font-size:10.5px;letter-spacing:.02em}
       .chart-svg .bar-inc rect{fill:var(--chart-inc);opacity:1}
   .chart-svg .bar-exp rect{fill:var(--chart-exp);opacity:1}
@@ -799,7 +863,7 @@ try {
     .chart-svg .net-dots circle{fill:var(--brief-accent);stroke:none}
   .chart-svg .net-dots circle.is-neg{fill:var(--brief-coral)}
   .chart-svg .hits rect{fill:transparent;pointer-events:all}
-  .chart-svg .hover-guide{stroke:color-mix(in srgb, var(--brief-text) 36%, transparent);stroke-width:1;stroke-dasharray:3 4;transition:opacity .12s ease}
+  .chart-svg .hover-guide{stroke:rgba(var(--rgb-text),0.36);stroke-width:1;stroke-dasharray:3 4;transition:opacity .12s ease}
     .chart-svg .net-label{fill:var(--brief-accent);font-size:10.5px;font-weight:700;font-family:var(--brief-font-body);paint-order:stroke;stroke:var(--brief-surface);stroke-width:3px;stroke-linejoin:round}
   .chart-svg .net-label.is-neg{fill:var(--brief-coral)}
 
@@ -827,11 +891,11 @@ try {
     position:absolute;left:0;top:50%;margin-top:-16px;z-index:1;
     width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;
     border-radius:50%;font-family:inherit;cursor:pointer;color:var(--brief-text);
-    border:1px solid color-mix(in srgb,var(--brief-coral) 32%,transparent);
-    background:color-mix(in srgb,var(--brief-bg) 70%,transparent);
+    border:1px solid rgba(var(--rgb-coral),0.32);
+    background:rgba(var(--rgb-bg),0.7);
     backdrop-filter:blur(8px);
-    box-shadow:0 0 0 4px color-mix(in srgb,var(--brief-coral) 7%,transparent),
-               inset 0 0 12px color-mix(in srgb,var(--brief-coral) 9%,transparent);
+    box-shadow:0 0 0 4px rgba(var(--rgb-coral),0.07),
+               inset 0 0 12px rgba(var(--rgb-coral),0.09);
     transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
   }
   #catHeadRow .viz-switch:hover{transform:scale(1.09)}
@@ -842,18 +906,18 @@ try {
     position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
     width:7px;height:7px;border-radius:50%;
     background:var(--brief-coral);
-    box-shadow:0 0 0 2px color-mix(in srgb,var(--brief-coral) 18%,transparent),
-               0 0 12px 2px color-mix(in srgb,var(--brief-coral) 52%,transparent);
+    box-shadow:0 0 0 2px rgba(var(--rgb-coral),0.18),
+               0 0 12px 2px rgba(var(--rgb-coral),0.52);
   }
   #catHeadRow .viz-switch[data-viz="cat"]{
-    border-color:color-mix(in srgb,var(--brief-primary) 32%,transparent);
-    box-shadow:0 0 0 4px color-mix(in srgb,var(--brief-primary) 7%,transparent),
-               inset 0 0 12px color-mix(in srgb,var(--brief-primary) 9%,transparent);
+    border-color:rgba(var(--rgb-primary),0.32);
+    box-shadow:0 0 0 4px rgba(var(--rgb-primary),0.07),
+               inset 0 0 12px rgba(var(--rgb-primary),0.09);
   }
   .viz-switch[data-viz="cat"] .viz-dot{
     background:var(--brief-primary);
-    box-shadow:0 0 0 2px color-mix(in srgb,var(--brief-primary) 18%,transparent),
-               0 0 12px 2px color-mix(in srgb,var(--brief-primary) 52%,transparent);
+    box-shadow:0 0 0 2px rgba(var(--rgb-primary),0.18),
+               0 0 12px 2px rgba(var(--rgb-primary),0.52);
   }
   #vizCat[hidden],#vizTest[hidden]{display:none!important}
   .sec-note{font-size:11.5px;color:var(--brief-muted-2)}
@@ -861,10 +925,10 @@ try {
         .hero-main .viz-layout{margin-top:auto;min-height:0;grid-auto-rows:minmax(0,1fr)}
     .chart-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 14px;margin-bottom:6px}
   .chart-headmain{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
-  .chart-grain{display:inline-flex;padding:2px;border-radius:var(--brief-radius-pill);background:color-mix(in srgb, var(--brief-bg) 62%, transparent);box-shadow:var(--brief-ring)}
+  .chart-grain{display:inline-flex;padding:2px;border-radius:var(--brief-radius-pill);background:rgba(var(--rgb-bg),0.62);box-shadow:var(--brief-ring)}
   .chart-grain button{border:0;background:transparent;color:var(--brief-muted-2);font-family:inherit;font-size:11px;font-weight:600;line-height:1;padding:5px 10px;border-radius:var(--brief-radius-pill);cursor:pointer;transition:background .16s ease,color .16s ease}
   .chart-grain button:hover{color:var(--brief-text)}
-  .chart-grain button.is-on{background:color-mix(in srgb, var(--brief-primary) 20%, transparent);color:var(--brief-primary)}
+  .chart-grain button.is-on{background:rgba(var(--rgb-primary),0.2);color:var(--brief-primary)}
   .chart-grain button:focus-visible{outline:2px solid var(--brief-primary);outline-offset:1px}
   .chart-title{font-family:var(--brief-font-heading);font-size:13px;font-weight:600;letter-spacing:.01em}
     .chart-card{--chart-inc:var(--brief-primary);--chart-exp:var(--brief-coral);position:relative;padding:14px 14px 8px;display:flex;flex-direction:column;min-height:0}
@@ -918,7 +982,7 @@ try {
     grid-area:bar;
     height:6px;
     border-radius:var(--brief-radius-sm);
-    background:color-mix(in srgb, var(--brief-text) 8%, transparent);
+    background:rgba(var(--rgb-text),0.08);
     overflow:hidden;
   }
   .cat-bar i{display:block;height:100%;border-radius:inherit;background:var(--tone, var(--brief-primary))}
@@ -936,7 +1000,7 @@ try {
   .top3-box.exp-top3{border-left-color:#F97362}
   .top3-box.inc-top3{border-left:0;border-right:3px solid #22D3A5;text-align:right}
   .top3-label{font-size:10px;letter-spacing:.14em;color:var(--brief-muted-2)}
-  .top3-val{font-size:12.5px;line-height:1.65;color:color-mix(in srgb,var(--brief-text) 90%,transparent)}
+  .top3-val{font-size:12.5px;line-height:1.65;color:rgba(var(--rgb-text),0.9)}
   .top3-val b{font-weight:700}
 
   .dual-panels{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;align-items:start}
@@ -947,9 +1011,9 @@ try {
   .dot-inc{background:#22D3A5;box-shadow:0 0 10px rgba(34,211,165,.5)}
   /* 支出：进度条从右向左填充（锚定右端，实心在锚点） */
   .exp-panel .cat-bar{display:flex;justify-content:flex-end}
-  .exp-panel .cat-bar i{margin-left:auto;background:linear-gradient(90deg,color-mix(in srgb,#F97362 55%,transparent),#F97362);box-shadow:0 0 12px rgba(249,115,98,.36)}
+  .exp-panel .cat-bar i{margin-left:auto;background:linear-gradient(90deg,rgba(249,115,98,.55),#F97362);box-shadow:0 0 12px rgba(249,115,98,.36)}
   /* 收入：青绿色（图2），进度条从左向右填充，实心在锚点，与支出镜像 */
-  .inc-panel .cat-bar i{background:linear-gradient(90deg,#22D3A5,color-mix(in srgb,#22D3A5 55%,transparent));box-shadow:0 0 12px rgba(34,211,165,.36)}
+  .inc-panel .cat-bar i{background:linear-gradient(90deg,#22D3A5,rgba(34,211,165,.55));box-shadow:0 0 12px rgba(34,211,165,.36)}
   .exp-panel .cat-amt{color:#F97362}
   .inc-panel .cat-amt{color:#22D3A5}
   /* 支出面板作为收入面板的镜像：金额/百分比在左、进度条居中、分类名在右 */
@@ -976,8 +1040,8 @@ try {
   .t-half.left .track{justify-content:flex-end}
   .t-half.right .track{justify-content:flex-start}
   .tbar{height:16px;border-radius:8px;min-width:7px}
-  .tbar-l{background:linear-gradient(90deg,color-mix(in srgb,var(--brief-coral) 58%,transparent),var(--brief-coral));box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 0 10px color-mix(in srgb,var(--brief-coral) 38%,transparent)}
-  .tbar-r{background:linear-gradient(90deg,color-mix(in srgb,var(--brief-primary) 58%,transparent),var(--brief-primary));box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 0 10px color-mix(in srgb,var(--brief-primary) 38%,transparent)}
+  .tbar-l{background:linear-gradient(90deg,rgba(var(--rgb-coral),0.58),var(--brief-coral));box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 0 10px rgba(var(--rgb-coral),0.38)}
+  .tbar-r{background:linear-gradient(90deg,rgba(var(--rgb-primary),0.58),var(--brief-primary));box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 0 10px rgba(var(--rgb-primary),0.38)}
   .tlbl{flex:none;font-size:15px;font-weight:600;color:var(--brief-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .tamt{flex:none;font-size:12.5px;font-weight:700;white-space:nowrap}
   .tamt-l{color:var(--brief-coral)}
@@ -987,6 +1051,15 @@ try {
      用 body 上的类控制，图表每次重渲染后依然生效。 */
   body.hide-viz-summary .test-summary,
   body.hide-viz-summary .top3-row{display:none}
+  /* 设置里的「显示收支卡片」（默认关）：关掉后主屏不显示收支 KPI 与两个环形图卡片。
+     例外：账户有负余额时只保留「异常账户」一张卡，并被 JS 打上 .has-bad，
+     此处让它独占整行（卡片宽度随网格列数一起变），其余卡片仍按设置隐藏。 */
+  body.hide-kpi .kpi-grid .kpi{display:none}
+  body.hide-kpi .kpi-grid{grid-template-columns:minmax(0,1fr)}
+  body.hide-kpi .kpi-grid.has-bad .kpi.is-bad{display:block}
+  body.hide-kpi .donut-stack{display:none}
+  /* 环形图列没了，图表卡片独占整行，避免左侧留一条 168px 的空列 */
+  body.hide-kpi .viz-layout{grid-template-columns:minmax(0,1fr)}
   .sum-bar{position:relative;background:var(--brief-surface-3);border:1px solid var(--brief-line);border-radius:9px;padding:9px 12px 10px;min-height:50px}
   .sum-bar.l{border-left:3px solid var(--brief-coral)}
   .sum-bar.r{border-right:3px solid var(--brief-primary)}
@@ -1022,7 +1095,7 @@ try {
   th.num{text-align:right}
   .group td{
     padding:9px 20px;
-    background:color-mix(in srgb, var(--brief-text) 4%, transparent);
+    background:rgba(var(--rgb-text),0.04);
     font-size:10.5px;
     letter-spacing:.16em;
     font-weight:700;
@@ -1031,7 +1104,7 @@ try {
   }
   .total td{
     font-weight:700;
-    background:color-mix(in srgb, var(--brief-text) 3%, transparent);
+    background:rgba(var(--rgb-text),0.03);
     border-bottom:1px solid var(--brief-line);
   }
   .badge-late{
@@ -1039,15 +1112,15 @@ try {
     padding:1px 8px;border-radius:var(--brief-radius-pill);
     font-size:10.5px;font-weight:700;
     color:var(--brief-coral);
-    background:color-mix(in srgb, var(--brief-coral) 15%, transparent);
+    background:rgba(var(--rgb-coral),0.15);
   }
   .table-note{
     padding:15px 20px;
     font-size:13px;
     line-height:1.7;
-    background:color-mix(in srgb, var(--brief-primary) 9%, transparent);
-    border-top:1px solid color-mix(in srgb, var(--brief-primary) 22%, transparent);
-    color:color-mix(in srgb, var(--brief-text) 90%, transparent);
+    background:rgba(var(--rgb-primary),0.09);
+    border-top:1px solid rgba(var(--rgb-primary),0.22);
+    color:rgba(var(--rgb-text),0.9);
   }
   .table-note b{color:var(--brief-primary)}
   /* 合计：标签与金额紧挨成一个整体，统一放到表格最后一行，不再三列拉散 */
@@ -1066,11 +1139,11 @@ try {
     border-bottom:1px solid var(--brief-line);
     transition:background .15s ease;
   }
-  .flow-row:hover{background:color-mix(in srgb, var(--brief-text) 4%, transparent)}
+  .flow-row:hover{background:rgba(var(--rgb-text),0.04)}
   .flow-row:last-child{border-bottom:none}
   /* 刚保存的那一笔：短暂高亮，明确告诉用户「流水记录已刷新」 */
   @keyframes flowNewPulse{
-    0%{background:color-mix(in srgb,var(--brief-primary) 22%,transparent);box-shadow:inset 3px 0 0 var(--brief-primary)}
+    0%{background:rgba(var(--rgb-primary),0.22);box-shadow:inset 3px 0 0 var(--brief-primary)}
     100%{background:transparent;box-shadow:inset 3px 0 0 transparent}
   }
   .flow-row.is-new{animation:flowNewPulse 2.2s ease-out both}
@@ -1080,7 +1153,7 @@ try {
     display:grid;place-items:center;
     border-radius:50%;
     border:1.5px solid var(--brief-border-soft);
-    background:color-mix(in srgb, var(--brief-text) 5%, transparent);
+    background:rgba(var(--rgb-text),0.05);
   }
   .flow-ico svg{width:22px;height:22px;display:block}
   .flow-ico.ico-alipay{color:#4D9BFF;border-color:rgba(77,155,255,.55);background:rgba(77,155,255,.11)}
@@ -1117,7 +1190,7 @@ try {
   .flow-title.is-empty{color:var(--brief-muted);font-weight:500;font-style:italic}
   /* 日期框：宽度完全由内容决定，不拉伸、不设最小宽度 */
   .flow-tag-date{flex:0 0 auto;color:var(--brief-muted-2);letter-spacing:.02em}
-  .flow-tag-date.is-fest{color:#F5C25B;border-color:rgba(245,194,91,.45);background:rgba(245,194,91,.08)}
+  .flow-tag-date.is-fest{color:var(--cal-fest);border-color:rgba(245,194,91,.45);background:rgba(245,194,91,.08)}
   /* 下方一行：类型 / 账户 两个框 */
   .flow-tags{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:6px}
   .flow-tag{
@@ -1133,12 +1206,12 @@ try {
   .in{color:var(--brief-primary)}
   .out{color:var(--brief-coral)}
   /* 流水：第一行查询栏 + 列表超过 6 条自动滚动 */
-  .flow-query{display:flex;align-items:center;gap:9px;padding:10px 14px;border-bottom:1px solid var(--brief-line);background:color-mix(in srgb,var(--brief-text) 2.5%,transparent);transition:background .16s ease}
-  .flow-query:focus-within{background:color-mix(in srgb,var(--brief-primary) 7%,transparent)}
+  .flow-query{display:flex;align-items:center;gap:9px;padding:10px 14px;border-bottom:1px solid var(--brief-line);background:rgba(var(--rgb-text),0.025);transition:background .16s ease}
+  .flow-query:focus-within{background:rgba(var(--rgb-primary),0.07)}
   .flow-query-ico{width:15px;height:15px;flex:none;color:var(--brief-muted-2)}
   .flow-query input{flex:1;min-width:0;background:transparent;border:0;outline:0;font-family:inherit;font-size:12.5px;color:var(--brief-text);padding:4px 0}
   .flow-query input::placeholder{color:var(--brief-muted-2)}
-  .flow-query-clear{width:22px;height:22px;flex:none;display:grid;place-items:center;border:0;border-radius:50%;background:color-mix(in srgb,var(--brief-text) 9%,transparent);color:var(--brief-muted);font-family:inherit;font-size:14px;line-height:1;cursor:pointer;transition:background .16s ease,color .16s ease}
+  .flow-query-clear{width:22px;height:22px;flex:none;display:grid;place-items:center;border:0;border-radius:50%;background:rgba(var(--rgb-text),0.09);color:var(--brief-muted);font-family:inherit;font-size:14px;line-height:1;cursor:pointer;transition:background .16s ease,color .16s ease}
   .flow-query-clear:hover{color:#fff;background:var(--brief-coral)}
   .flow-query-clear[hidden]{display:none}
   /* 账户筛选：查询栏右侧按钮 + 挂在 body 上的浮窗（避开 .flow-card 的 overflow:hidden）。
@@ -1152,12 +1225,12 @@ try {
   }
   .flow-acct-btn svg{width:13px;height:13px;flex:none}
   .flow-acct-btn .flow-acct-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .flow-acct-btn:hover{color:var(--brief-primary);border-color:color-mix(in srgb,var(--brief-primary) 50%,transparent)}
+  .flow-acct-btn:hover{color:var(--brief-primary);border-color:rgba(var(--rgb-primary),0.5)}
   .flow-acct-btn:focus-visible{outline:2px solid var(--brief-primary);outline-offset:2px}
   .flow-acct-btn.is-active{
     color:var(--brief-primary);
-    border-color:color-mix(in srgb,var(--brief-primary) 55%,transparent);
-    background:color-mix(in srgb,var(--brief-primary) 12%,transparent);
+    border-color:rgba(var(--rgb-primary),0.55);
+    background:rgba(var(--rgb-primary),0.12);
   }
   .flow-acct-pop{
     position:absolute;z-index:65;width:210px;max-height:min(300px,70vh);overflow-y:auto;
@@ -1177,8 +1250,8 @@ try {
     font-family:inherit;font-size:11.5px;text-align:left;cursor:pointer;
     transition:background .16s ease,color .16s ease;
   }
-  .flow-acct-opt:hover{background:color-mix(in srgb,var(--brief-text) 7%,transparent);color:var(--brief-text)}
-  .flow-acct-opt.is-on{color:var(--brief-primary);background:color-mix(in srgb,var(--brief-primary) 12%,transparent)}
+  .flow-acct-opt:hover{background:rgba(var(--rgb-text),0.07);color:var(--brief-text)}
+  .flow-acct-opt.is-on{color:var(--brief-primary);background:rgba(var(--rgb-primary),0.12)}
   .flow-acct-opt i{font-style:normal;font-variant-numeric:tabular-nums;color:var(--brief-muted-2);font-size:10px}
   /* 列表滚到顶/底时把滚动交还给整页，避免滚动链被锁死 */
   #flowList{overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--brief-scroll) transparent}
@@ -1200,14 +1273,14 @@ try {
     width:76px;height:76px;margin:0 auto 22px;border-radius:50%;
     background:#17B98A;color:#FFFFFF;
     display:flex;align-items:center;justify-content:center;
-    box-shadow:0 10px 30px color-mix(in srgb,#17B98A 32%,transparent);
+    box-shadow:0 10px 30px rgba(23,185,138,.32);
     animation:bootMarkIn .6s cubic-bezier(.2,.8,.2,1) both;
   }
   .boot-mark svg{width:60px;height:60px;display:block}
   /* 加载完成后由圆形徽章克隆出的「跳向记按钮」图层，脱离启动遮罩独立运动 */
   .boot-mark.boot-fly{
     position:fixed;margin:0;z-index:9995;pointer-events:none;animation:none;
-    box-shadow:0 12px 34px color-mix(in srgb,#17B98A 48%,transparent);
+    box-shadow:0 12px 34px rgba(23,185,138,.48);
   }
   .fab-land-ring{
     position:fixed;width:56px;height:56px;border-radius:50%;z-index:96;pointer-events:none;
@@ -1276,7 +1349,7 @@ try {
     cursor:pointer;
     transition:color .16s ease, border-color .16s ease, background .16s ease;
   }
-  .ghost-btn:hover{color:var(--brief-primary);border-color:color-mix(in srgb, var(--brief-primary) 55%, transparent);background:color-mix(in srgb, var(--brief-primary) 8%, transparent)}
+  .ghost-btn:hover{color:var(--brief-primary);border-color:rgba(var(--rgb-primary),0.55);background:rgba(var(--rgb-primary),0.08)}
   .ghost-btn:focus-visible{outline:2px solid var(--brief-primary);outline-offset:3px}
   /* 设置浮窗里的数据操作按钮：桌面悬浮/聚焦显示说明；手机改为长按显示被按按钮的说明。
      右对齐浮层，避免浮窗最右侧按钮的说明溢出屏幕。 */
@@ -1322,26 +1395,26 @@ try {
     position:fixed;right:clamp(16px,2.4vw,28px);bottom:clamp(16px,2.4vw,28px);z-index:55;
     width:56px;height:56px;border-radius:50%;
     display:inline-flex;align-items:center;justify-content:center;
-    background:color-mix(in srgb, var(--brief-bg) 72%, transparent);
+    background:rgba(var(--rgb-bg),0.72);
     -webkit-backdrop-filter:blur(14px) saturate(140%);
     backdrop-filter:blur(14px) saturate(140%);
-    border:1px solid color-mix(in srgb, var(--brief-primary) 40%, transparent);
+    border:1px solid rgba(var(--rgb-primary),0.4);
     color:var(--brief-primary);font-family:inherit;font-size:20px;font-weight:600;line-height:1;
-    text-shadow:0 0 14px color-mix(in srgb, var(--brief-primary) 55%, transparent);
+    text-shadow:0 0 14px rgba(var(--rgb-primary),0.55);
     cursor:pointer;
     box-shadow:0 12px 28px rgba(0,0,0,.45),
                inset 0 1px 0 rgba(255,255,255,.14),
                inset 0 0 0 1px rgba(255,255,255,.05),
-               0 0 22px color-mix(in srgb, var(--brief-primary) 16%, transparent);
+               0 0 22px rgba(var(--rgb-primary),0.16);
     transition:transform .16s ease, background .16s ease, border-color .16s ease, box-shadow .16s ease;
   }
   .fab-add:hover{
-    background:color-mix(in srgb, var(--brief-primary) 18%, color-mix(in srgb, var(--brief-bg) 72%, transparent));
-    border-color:color-mix(in srgb, var(--brief-primary) 78%, transparent);
+    background:color-mix(in srgb, var(--brief-primary) 18%, rgba(var(--rgb-bg),0.72));
+    border-color:rgba(var(--rgb-primary),0.78);
     box-shadow:0 14px 32px rgba(0,0,0,.5),
                inset 0 1px 0 rgba(255,255,255,.2),
                inset 0 0 0 1px rgba(255,255,255,.08),
-               0 0 28px color-mix(in srgb, var(--brief-primary) 30%, transparent);
+               0 0 28px rgba(var(--rgb-primary),0.3);
     transform:translateY(-2px);
   }
   .fab-add:active{transform:translateY(0)}
@@ -1367,7 +1440,7 @@ try {
   .fab-snap-hint{
     position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:95;
     padding:9px 16px;border-radius:999px;font-size:12px;font-weight:600;
-    color:var(--brief-text);background:color-mix(in srgb,var(--brief-bg) 88%,transparent);
+    color:var(--brief-text);background:rgba(var(--rgb-bg),0.88);
     border:1px solid var(--brief-line-strong);backdrop-filter:blur(10px);
     pointer-events:none;opacity:0;transition:opacity .18s ease;
   }
@@ -1379,7 +1452,7 @@ try {
     text-shadow:none;
     box-shadow:0 6px 16px rgba(0,0,0,.3);
   }
-  .fab-add:disabled:hover{background:color-mix(in srgb, var(--brief-bg) 72%, transparent);transform:none}
+  .fab-add:disabled:hover{background:rgba(var(--rgb-bg),0.72);transform:none}
   .cal-add:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
   .btn{
     display:inline-flex;align-items:center;gap:6px;
@@ -1388,12 +1461,12 @@ try {
     padding:8px 14px;border-radius:var(--brief-radius-pill);cursor:pointer;
     transition:color .16s ease,border-color .16s ease,background .16s ease;
   }
-  .btn:hover{border-color:color-mix(in srgb, var(--brief-primary) 55%, transparent);color:var(--brief-primary)}
+  .btn:hover{border-color:rgba(var(--rgb-primary),0.55);color:var(--brief-primary)}
   .btn:focus-visible{outline:2px solid var(--brief-primary);outline-offset:3px}
   .btn-primary{background:var(--brief-primary);border-color:var(--brief-primary);color:#08231B}
   .btn-primary:hover{background:color-mix(in srgb, var(--brief-primary) 84%, #fff);border-color:transparent;color:#08231B}
   .btn-dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.45;flex:none}
-  .btn.is-on{color:var(--brief-primary);border-color:color-mix(in srgb, var(--brief-primary) 55%, transparent);background:color-mix(in srgb, var(--brief-primary) 12%, transparent)}
+  .btn.is-on{color:var(--brief-primary);border-color:rgba(var(--rgb-primary),0.55);background:rgba(var(--rgb-primary),0.12)}
   .btn.is-on .btn-dot{opacity:1;box-shadow:0 0 10px var(--brief-primary)}
   .sel select:disabled{opacity:.5;cursor:not-allowed}
 
@@ -1405,21 +1478,21 @@ try {
   /* 必填红星放在文字左边（不是右边） */
   .field>span .req{font-style:normal;color:var(--brief-coral);font-size:11px;margin-right:3px;letter-spacing:0}
   .field input,.field select{
-    width:100%;background:color-mix(in srgb, var(--brief-bg) 65%, transparent);
+    width:100%;background:rgba(var(--rgb-bg),0.65);
     border:1px solid var(--brief-line-strong);border-radius:var(--brief-radius-sm);
     color:var(--brief-text);font-family:inherit;font-size:13px;padding:9px 10px;
   }
   .field input::placeholder{color:var(--brief-muted-2)}
-  .field input:focus,.field select:focus{outline:none;border-color:var(--brief-primary);box-shadow:0 0 0 3px color-mix(in srgb, var(--brief-primary) 16%, transparent)}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--brief-primary);box-shadow:0 0 0 3px rgba(var(--rgb-primary),0.16)}
   /* 金额：¥ 作为常驻前缀落在输入框内部，有值也不消失。
      整块 .amt-box 冒充输入框外框，内部 input 去掉自己的边框，聚焦时由 :focus-within 统一高亮。 */
   .amt-box{
     display:flex;align-items:center;min-width:0;box-sizing:border-box;
-    background:color-mix(in srgb, var(--brief-bg) 65%, transparent);
+    background:rgba(var(--rgb-bg),0.65);
     border:1px solid var(--brief-line-strong);border-radius:var(--brief-radius-sm);
     padding:0 10px;transition:border-color .16s ease,box-shadow .16s ease;
   }
-  .amt-box:focus-within{border-color:var(--brief-primary);box-shadow:0 0 0 3px color-mix(in srgb, var(--brief-primary) 16%, transparent)}
+  .amt-box:focus-within{border-color:var(--brief-primary);box-shadow:0 0 0 3px rgba(var(--rgb-primary),0.16)}
   .amt-yen{flex:none;color:var(--brief-muted);font-size:12.5px;line-height:1;letter-spacing:0}
   .field .amt-box input{
     flex:1 1 auto;min-width:0;width:auto;box-sizing:border-box;
@@ -1434,7 +1507,7 @@ try {
     flex:1 1 auto;min-width:0;height:196px;box-sizing:border-box;
     display:flex;flex-direction:column;gap:5px;padding:5px;
     overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;
-    background:color-mix(in srgb,var(--brief-bg) 45%,transparent);
+    background:rgba(var(--rgb-bg),0.45);
     border:1px solid var(--brief-line-strong);border-radius:var(--brief-radius-sm);
   }
   .fa-list::-webkit-scrollbar{width:6px}
@@ -1442,13 +1515,13 @@ try {
   .fa-opt{
     display:flex;align-items:center;gap:7px;flex:none;width:100%;box-sizing:border-box;
     min-height:32px;padding:4px 7px;border:1px solid transparent;border-radius:8px;
-    background:color-mix(in srgb,var(--brief-surface) 72%,transparent);
+    background:rgba(var(--rgb-surface),0.72);
     color:var(--brief-text);font-family:inherit;font-size:11.5px;text-align:left;cursor:pointer;
     transition:background .16s ease,border-color .16s ease;
   }
-  .fa-opt:hover{background:color-mix(in srgb,var(--brief-primary) 12%,transparent)}
-  .fa-opt:focus-visible{outline:none;border-color:var(--brief-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--brief-primary) 16%,transparent)}
-  .fa-opt.is-sel{border-color:color-mix(in srgb,var(--brief-primary) 60%,transparent);background:color-mix(in srgb,var(--brief-primary) 14%,transparent)}
+  .fa-opt:hover{background:rgba(var(--rgb-primary),0.12)}
+  .fa-opt:focus-visible{outline:none;border-color:var(--brief-primary);box-shadow:0 0 0 3px rgba(var(--rgb-primary),0.16)}
+  .fa-opt.is-sel{border-color:rgba(var(--rgb-primary),0.6);background:rgba(var(--rgb-primary),0.14)}
   .fa-opt-ico{display:inline-flex;align-items:center;justify-content:center;flex:none}
   .fa-opt-ico .flow-ico{width:20px;height:20px;border-width:1px}
   .fa-opt-ico .flow-ico svg{width:11px;height:11px}
@@ -1464,13 +1537,13 @@ try {
   .fa-pick{
     display:none;align-items:center;gap:8px;width:100%;box-sizing:border-box;
     height:38px;padding:0 10px;text-align:left;
-    background:color-mix(in srgb, var(--brief-bg) 65%, transparent);
+    background:rgba(var(--rgb-bg),0.65);
     border:1px solid var(--brief-line-strong);border-radius:var(--brief-radius-sm);
     color:var(--brief-text);font-family:inherit;font-size:12.5px;cursor:pointer;
     transition:border-color .16s ease;
   }
-  .fa-pick:hover{border-color:color-mix(in srgb,var(--brief-primary) 45%,transparent)}
-  .fa-pick:focus-visible{outline:none;border-color:var(--brief-primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--brief-primary) 16%,transparent)}
+  .fa-pick:hover{border-color:rgba(var(--rgb-primary),0.45)}
+  .fa-pick:focus-visible{outline:none;border-color:var(--brief-primary);box-shadow:0 0 0 3px rgba(var(--rgb-primary),0.16)}
   .fa-pick[aria-expanded="true"]{border-color:var(--brief-primary)}
   .fa-pick:disabled{opacity:.5;cursor:not-allowed}
   .fa-pick-txt{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1500,8 +1573,8 @@ try {
     transition:color .16s ease,background .16s ease,border-color .16s ease;
   }
   .catpick-toggle>svg{width:13px;height:13px;opacity:.85;transition:transform .2s ease}
-  .catpick-toggle:hover{color:var(--brief-primary);background:color-mix(in srgb,var(--brief-primary) 12%,transparent)}
-  .catpick-toggle[aria-expanded="true"]{color:var(--brief-primary);border-color:color-mix(in srgb,var(--brief-primary) 45%,transparent)}
+  .catpick-toggle:hover{color:var(--brief-primary);background:rgba(var(--rgb-primary),0.12)}
+  .catpick-toggle[aria-expanded="true"]{color:var(--brief-primary);border-color:rgba(var(--rgb-primary),0.45)}
   .catpick-toggle[aria-expanded="true"]>svg{transform:rotate(180deg)}
   .catpick-pop{
     position:fixed;z-index:96;width:280px;max-width:calc(100vw - 16px);box-sizing:border-box;
@@ -1515,7 +1588,7 @@ try {
   .catpick-title{font-size:11.5px;font-weight:650;letter-spacing:.04em;color:var(--brief-muted)}
   .catpick-title em{
     font-style:normal;font-size:10px;font-weight:600;margin-left:5px;padding:1px 6px;
-    border-radius:999px;background:color-mix(in srgb,var(--brief-primary) 16%,transparent);
+    border-radius:999px;background:rgba(var(--rgb-primary),0.16);
     color:var(--brief-primary);font-variant-numeric:tabular-nums;
   }
   .catpick-x{
@@ -1523,7 +1596,7 @@ try {
     border:1px solid var(--brief-line-strong);border-radius:7px;
     background:transparent;color:var(--brief-muted);font-family:inherit;font-size:14px;line-height:1;cursor:pointer;
   }
-  .catpick-x:hover{color:var(--brief-coral);border-color:color-mix(in srgb,var(--brief-coral) 55%,transparent)}
+  .catpick-x:hover{color:var(--brief-coral);border-color:rgba(var(--rgb-coral),0.55)}
   .catpick-chips{
     display:flex;flex-wrap:wrap;align-content:flex-start;gap:6px;
     max-height:184px;overflow-y:auto;overscroll-behavior:contain;
@@ -1534,17 +1607,17 @@ try {
   .catpick-chip{
     display:inline-flex;align-items:center;gap:5px;max-width:100%;padding:6px 10px;
     border:1px solid var(--brief-line-strong);border-radius:999px;
-    background:color-mix(in srgb,var(--brief-bg) 45%,transparent);
+    background:rgba(var(--rgb-bg),0.45);
     color:var(--brief-text);font-family:inherit;font-size:11.5px;line-height:1.2;
     cursor:pointer;transition:color .16s ease,border-color .16s ease,background .16s ease;
   }
   .catpick-chip>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .catpick-chip>i{font-style:normal;font-size:9.5px;color:var(--brief-muted-2);font-variant-numeric:tabular-nums}
-  .catpick-chip:hover{border-color:color-mix(in srgb,var(--brief-primary) 55%,transparent);background:color-mix(in srgb,var(--brief-primary) 12%,transparent)}
+  .catpick-chip:hover{border-color:rgba(var(--rgb-primary),0.55);background:rgba(var(--rgb-primary),0.12)}
   .catpick-chip.is-on{
     color:var(--brief-primary);font-weight:600;
-    border-color:color-mix(in srgb,var(--brief-primary) 60%,transparent);
-    background:color-mix(in srgb,var(--brief-primary) 18%,transparent);
+    border-color:rgba(var(--rgb-primary),0.6);
+    background:rgba(var(--rgb-primary),0.18);
   }
   .catpick-empty{margin:2px 0;padding:8px 2px;font-size:11px;color:var(--brief-muted-2);line-height:1.6}
   .catpick-foot{
@@ -1556,7 +1629,7 @@ try {
     padding:3px 9px;border:1px solid var(--brief-line-strong);border-radius:999px;
     background:transparent;color:var(--brief-muted);font-family:inherit;font-size:10.5px;cursor:pointer;
   }
-  .catpick-clear:hover{color:var(--brief-coral);border-color:color-mix(in srgb,var(--brief-coral) 55%,transparent)}
+  .catpick-clear:hover{color:var(--brief-coral);border-color:rgba(var(--rgb-coral),0.55)}
 
   /* ---------- 记一笔 · 日期：整块可点 + 自定义日历面板 ----------
      浏览器原生 date picker 的弹出层不能用页面 CSS 美化，且手机端点输入框任意处都会强弹原生层。
@@ -1589,7 +1662,7 @@ try {
     display:inline-flex;align-items:center;justify-content:center;
     transition:color .16s ease,border-color .16s ease;
   }
-  .dpop-btn:hover:not(:disabled){color:var(--brief-primary);border-color:color-mix(in srgb,var(--brief-primary) 50%,transparent)}
+  .dpop-btn:hover:not(:disabled){color:var(--brief-primary);border-color:rgba(var(--rgb-primary),0.5)}
   .dpop-btn:focus-visible{outline:2px solid var(--brief-primary);outline-offset:2px}
   .dpop-btn:disabled{opacity:.3;cursor:not-allowed}
   .dpop-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
@@ -1597,14 +1670,14 @@ try {
   .dpop-day{
     aspect-ratio:1/1;display:grid;place-items:center;box-sizing:border-box;
     border:1px solid transparent;border-radius:8px;background:transparent;
-    color:color-mix(in srgb,var(--brief-text) 70%,transparent);
+    color:rgba(var(--rgb-text),0.7);
     font-family:inherit;font-size:11.5px;font-variant-numeric:tabular-nums;cursor:pointer;
     transition:background .16s ease,border-color .16s ease,color .16s ease;
   }
-  .dpop-day:hover:not(:disabled){background:color-mix(in srgb,var(--brief-primary) 12%,transparent);color:var(--brief-text)}
+  .dpop-day:hover:not(:disabled){background:rgba(var(--rgb-primary),0.12);color:var(--brief-text)}
   .dpop-day.is-out{color:var(--brief-muted-2)}
-  .dpop-day.is-today{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--brief-accent) 65%,transparent)}
-  .dpop-day.is-sel{background:color-mix(in srgb,var(--brief-primary) 20%,transparent);border-color:color-mix(in srgb,var(--brief-primary) 60%,transparent);color:var(--brief-text);font-weight:650}
+  .dpop-day.is-today{box-shadow:inset 0 0 0 1px rgba(var(--rgb-accent),0.65)}
+  .dpop-day.is-sel{background:rgba(var(--rgb-primary),0.2);border-color:rgba(var(--rgb-primary),0.6);color:var(--brief-text);font-weight:650}
   .dpop-day:disabled{opacity:.28;cursor:not-allowed}
   .dpop-day.is-empty{visibility:hidden}
   .dpop-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:9px;border-top:1px solid var(--brief-line)}
@@ -1628,10 +1701,10 @@ try {
 
   /* 危险操作统一收进顶栏设置浮窗，页脚不再有数据操作按钮 */
   .ghost-btn.is-risk{border-color:color-mix(in srgb,var(--brief-coral) 40%,var(--brief-line-strong));color:color-mix(in srgb,var(--brief-coral) 68%,var(--brief-muted))}
-  .ghost-btn.is-risk:hover{color:var(--brief-coral);border-color:var(--brief-coral);background:color-mix(in srgb,var(--brief-coral) 12%,transparent)}
+  .ghost-btn.is-risk:hover{color:var(--brief-coral);border-color:var(--brief-coral);background:rgba(var(--rgb-coral),0.12)}
   .mini-field{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--brief-muted)}
   .mini-field input{
-    width:96px;background:color-mix(in srgb, var(--brief-bg) 65%, transparent);
+    width:96px;background:rgba(var(--rgb-bg),0.65);
     border:1px solid var(--brief-line-strong);border-radius:var(--brief-radius-sm);
     color:var(--brief-text);font-family:inherit;font-size:12px;padding:6px 8px;
   }
@@ -1688,7 +1761,7 @@ try {
     display:inline-flex;align-items:center;justify-content:center;
     transition:color .16s ease,border-color .16s ease;
   }
-  .cal-btn:hover{color:var(--brief-primary);border-color:color-mix(in srgb, var(--brief-primary) 50%, transparent)}
+  .cal-btn:hover{color:var(--brief-primary);border-color:rgba(var(--rgb-primary),0.5)}
   .cal-btn:focus-visible{outline:2px solid var(--brief-primary);outline-offset:2px}
   .cal-btn:disabled{opacity:.3;cursor:not-allowed}
   .cal-btn:disabled:hover{color:var(--brief-muted);border-color:var(--brief-line-strong)}
@@ -1696,7 +1769,7 @@ try {
   /* 顶栏设置里关掉「显示小日历设置」时，连齿轮与它的浮窗一起隐藏；
      已有的农历 / 节假日 / 星期 / 高亮今天偏好仍按上次保存的值生效。 */
   body.hide-cal-cfg .cal-set{display:none}
-  .cal-cfg[aria-expanded="true"]{color:var(--brief-primary);border-color:color-mix(in srgb, var(--brief-primary) 50%, transparent)}
+  .cal-cfg[aria-expanded="true"]{color:var(--brief-primary);border-color:rgba(var(--rgb-primary),0.5)}
   .cal-pop{
     position:absolute;top:calc(100% + 6px);right:0;z-index:30;width:150px;
     display:flex;flex-direction:column;gap:1px;padding:7px;
@@ -1706,7 +1779,7 @@ try {
   .cal-pop[hidden]{display:none}
   .cal-pop-title{font-size:8.5px;letter-spacing:.18em;color:var(--brief-muted-2);padding:2px 6px 5px}
   .cal-opt{display:flex;align-items:center;gap:7px;padding:5px 6px;border-radius:7px;font-size:11.5px;color:var(--brief-muted);cursor:pointer;transition:background .16s ease,color .16s ease}
-  .cal-opt:hover{background:color-mix(in srgb, var(--brief-text) 7%, transparent);color:var(--brief-text)}
+  .cal-opt:hover{background:rgba(var(--rgb-text),0.07);color:var(--brief-text)}
   .cal-opt input{
     -webkit-appearance:none;appearance:none;position:relative;flex:none;
     width:12px;height:12px;border-radius:4px;border:1px solid var(--brief-line-strong);
@@ -1719,35 +1792,39 @@ try {
     .cal-cell{
     position:relative;aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow:hidden;
     padding:2px 1px 3px;border:1px solid transparent;border-radius:8px;background:transparent;
-    color:color-mix(in srgb, var(--brief-text) 52%, transparent);
+    color:rgba(var(--rgb-text),0.58);
     font-family:inherit;font-size:11.5px;line-height:1;font-variant-numeric:tabular-nums;
     cursor:pointer;transition:background .16s ease,border-color .16s ease,color .16s ease;
   }
-  .cal-cell:hover{background:color-mix(in srgb, var(--brief-surface) 85%, transparent);color:var(--brief-text)}
+  .cal-cell:hover{background:rgba(var(--rgb-surface),0.85);color:var(--brief-text)}
   .cal-cell.is-empty{visibility:hidden;cursor:default}
     .cal-day{display:flex;align-items:baseline;justify-content:center;gap:2px;line-height:1}
-  .cal-sub{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-style:normal;font-size:7.5px;line-height:1.1;color:var(--brief-muted-2)}
-  .cal-sub.is-fest{color:var(--brief-accent);font-weight:700}
+  .cal-sub{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-style:normal;font-size:8px;line-height:1.15;color:var(--brief-muted-2)}
+  .cal-sub.is-fest{color:var(--cal-fest);font-weight:700}
   .cal-cell.has{color:var(--brief-text);font-weight:600}
-  .cal-cell.net-pos{background:color-mix(in srgb, var(--brief-primary) 11%, transparent);border-color:color-mix(in srgb, var(--brief-primary) 24%, transparent)}
+  .cal-cell.net-pos{background:rgba(var(--rgb-primary),0.11);border-color:rgba(var(--rgb-primary),0.24)}
     .cal-cell.net-pos .cal-sub{color:color-mix(in srgb, var(--brief-primary) 72%, var(--brief-muted-2))}
 
-  .cal-cell.net-neg{background:color-mix(in srgb, var(--brief-coral) 12%, transparent);border-color:color-mix(in srgb, var(--brief-coral) 26%, transparent)}
+  .cal-cell.net-neg{background:rgba(var(--rgb-coral),0.12);border-color:rgba(var(--rgb-coral),0.26)}
     .cal-cell.net-neg .cal-sub{color:color-mix(in srgb, var(--brief-coral) 72%, var(--brief-muted-2))}
 
-  .cal-cell.net-flat{background:color-mix(in srgb, var(--brief-accent) 9%, transparent);border-color:color-mix(in srgb, var(--brief-accent) 22%, transparent)}
+  .cal-cell.net-flat{background:rgba(var(--rgb-accent),0.09);border-color:rgba(var(--rgb-accent),0.22)}
   
-  .cal-cell.is-future{color:color-mix(in srgb, var(--brief-text) 26%, transparent);cursor:default}
-  .cal-cell.is-today{box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--brief-accent) 65%, transparent)}
+  .cal-cell.is-future{color:rgba(var(--rgb-text),0.26);cursor:default}
+  .cal-cell.is-today{box-shadow:inset 0 0 0 1px rgba(var(--rgb-accent),0.65)}
   /* 选中天用亮蓝色，避免与「有收入日」的青绿色混淆 */
-  .cal-cell.is-sel{--cal-sel:#4DA3FF;background:color-mix(in srgb, var(--cal-sel) 24%, transparent);border-color:var(--cal-sel);color:#fff;box-shadow:0 0 16px color-mix(in srgb, var(--cal-sel) 34%, transparent)}
+  .cal-cell.is-sel{--cal-sel:#4DA3FF;background:rgba(77,163,255,.24);border-color:var(--cal-sel);color:#fff;box-shadow:0 0 16px rgba(77,163,255,.34)}
     .cal-cell.is-sel .cal-sub{color:rgba(255,255,255,.82)}
+  /* 节日 / 节气那几个字始终是黄色：当天有收支（青绿/珊瑚红底）、被选中都不改色 */
+  .cal-cell .cal-sub.is-fest,
+  .cal-cell.is-sel .cal-sub.is-fest{color:var(--cal-fest);font-weight:700}
+  .cal-fest-txt{color:var(--cal-fest);font-weight:600}
     .cal-foot{margin-top:0px;padding-top:5px;border-top:1px solid var(--brief-line)}
   .cal-dayrow{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
   .cal-dayrow b{font-family:var(--brief-font-heading);font-size:12.5px;font-weight:600;letter-spacing:.02em}
   .cal-dayrow span{font-size:10.5px;color:var(--brief-muted-2)}
   .cal-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px}
-  .cal-stat{background:color-mix(in srgb, var(--brief-bg) 45%, transparent);border-radius:8px;padding:6px 7px;min-width:0}
+  .cal-stat{background:rgba(var(--rgb-bg),0.45);border-radius:8px;padding:6px 7px;min-width:0}
   .cal-stat span{display:block;font-size:9px;letter-spacing:.1em;color:var(--brief-muted-2)}
   .cal-stat b{display:block;margin-top:3px;font-family:var(--brief-font-heading);font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .cal-stat b.pos{color:var(--brief-primary)}
@@ -1755,7 +1832,7 @@ try {
   .cal-stat b.zero{color:var(--brief-muted)}
   .cal-list{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;max-height:41px;overflow-y:auto;height:41px}
   .cal-list li{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:11px;color:var(--brief-muted);line-height:1.3}
-  .cal-list li em{font-style:normal;color:color-mix(in srgb, var(--brief-text) 82%, transparent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cal-list li em{font-style:normal;color:rgba(var(--rgb-text),0.82);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .cal-list li i{font-style:normal;font-variant-numeric:tabular-nums;flex:none}
   .cal-list li i.in{color:var(--brief-primary)}
   .cal-list li i.out{color:var(--brief-coral)}
@@ -1779,7 +1856,7 @@ try {
     background:transparent;color:var(--brief-muted);font-size:15px;line-height:1;cursor:pointer;padding:0;
     transition:color .16s ease,border-color .16s ease;
   }
-  .modal-close:hover{color:var(--brief-coral);border-color:color-mix(in srgb, var(--brief-coral) 55%, transparent)}
+  .modal-close:hover{color:var(--brief-coral);border-color:rgba(var(--rgb-coral),0.55)}
   /* 记一笔：标题与副标题相对弹窗水平居中，关闭按钮脱离文档流固定到右上角 */
   #entryForm .modal-head{position:relative;justify-content:center}
   #entryForm .modal-head>div{width:100%;text-align:center}
@@ -1816,8 +1893,23 @@ try {
   .sql-modal-note{margin:14px 0 0;font-size:11px;line-height:1.7;color:var(--brief-muted-2)}
   /* 危险操作统一确认框 */
   .confirm-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
-  .confirm-ok{background:color-mix(in srgb,var(--brief-coral) 16%,transparent);border-color:color-mix(in srgb,var(--brief-coral) 60%,transparent);color:var(--brief-coral);font-weight:600}
+  .confirm-ok{background:rgba(var(--rgb-coral),0.16);border-color:rgba(var(--rgb-coral),0.6);color:var(--brief-coral);font-weight:600}
   .confirm-ok:hover{background:var(--brief-coral);border-color:var(--brief-coral);color:#fff}
+  /* 「关闭保留数据」二次确认：标题居中、正文明细、按钮等宽并交换位置（确认在左、取消在右） */
+  .sql-modal.is-center .modal-head{position:relative;justify-content:center}
+  .sql-modal.is-center .modal-head>div{width:100%}
+  .sql-modal.is-center .modal-close{position:absolute;right:0;top:0}
+  .sql-modal.is-center .modal-title{text-align:center;font-size:15.5px}
+  .sql-modal.is-center .modal-sub{text-align:left;font-size:11.5px;line-height:1.75;color:var(--brief-text);margin-top:12px}
+  .modal-sub .cf-lead{color:var(--brief-danger);font-weight:700}
+  .modal-sub .cf-path{color:var(--brief-muted);word-break:break-all;user-select:text;-webkit-user-select:text}
+  /* 关闭「保留数据」确认框正文：三条短句各带一个小横线，路径另起一行跟在同一句里 */
+  .modal-sub .cf-item{display:block;position:relative;padding-left:13px;margin-top:5px}
+  .modal-sub .cf-item:first-child{margin-top:0}
+  .modal-sub .cf-item::before{content:"–";position:absolute;left:0;top:0;color:var(--brief-muted-2)}
+  .modal-sub .cf-hi{color:var(--brief-primary);font-weight:700}
+  .confirm-actions.is-swap .ghost-btn{flex:1 1 0;min-width:0;text-align:center;padding-inline:0}
+  .confirm-actions.is-swap #confirmOk{order:-1}
   .entry-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
   .field.full{grid-column:span 2}
   /* 电脑端记一笔：两列四行，账户占左列并跨三行，右侧依次是 摘要 / 分类 / 金额。
@@ -1843,14 +1935,14 @@ try {
     /* 电脑端固定用最新版：紧凑下拉与它的浮层菜单都不出现 */
     .fa-pick,.fa-menu{display:none}
   }
-    .seg{display:flex;border:1px solid var(--brief-line-strong);border-radius:var(--brief-radius-sm);overflow:hidden;background:color-mix(in srgb, var(--brief-bg) 60%, transparent)}
+    .seg{display:flex;border:1px solid var(--brief-line-strong);border-radius:var(--brief-radius-sm);overflow:hidden;background:rgba(var(--rgb-bg),0.6)}
   .field>span.seg{font-size:inherit;letter-spacing:normal;color:inherit}
   .seg button{
     flex:1;border:0;background:transparent;color:var(--brief-muted);font-family:inherit;
     font-size:12.5px;font-weight:600;padding:9px 0;cursor:pointer;transition:background .16s ease,color .16s ease;
   }
-  .seg button.is-on{background:color-mix(in srgb, var(--brief-primary) 20%, transparent);color:var(--brief-primary)}
-  .seg button.is-on.is-out{background:color-mix(in srgb, var(--brief-coral) 20%, transparent);color:var(--brief-coral)}
+  .seg button.is-on{background:rgba(var(--rgb-primary),0.2);color:var(--brief-primary)}
+  .seg button.is-on.is-out{background:rgba(var(--rgb-coral),0.2);color:var(--brief-coral)}
 
 
   /* 桌面端：年/月胶囊相对页面水平居中；两侧等宽占位，品牌区仍靠左 */
@@ -2022,6 +2114,11 @@ try {
                 <button class="cap-pop-save" id="goalSave" type="button" hidden>保存</button>
                 <button class="cap-goal-cancel" id="goalCancel" type="button" hidden aria-label="取消编辑" title="取消编辑">✕</button>
               </div>
+              <label class="cap-switch-row" for="showKpiChk">
+                <span class="cap-switch-text">显示收支卡片</span>
+                <input class="cap-switch-input" id="showKpiChk" type="checkbox">
+                <span class="cap-switch" aria-hidden="true"></span>
+              </label>
               <label class="cap-switch-row" for="showCalCfgChk">
                 <span class="cap-switch-text">显示小日历设置</span>
                 <input class="cap-switch-input" id="showCalCfgChk" type="checkbox">
@@ -2059,12 +2156,19 @@ try {
               </div>
             </div>
             <div class="cap-sec is-risk" id="uninstallSec" hidden>
-              <p class="cap-divider is-risk">应用管理 · 仅设备版</p>
-              <div class="cap-acts">
-                <button class="ghost-btn is-risk cap-act" id="uninstallAppBtn" type="button" data-tip-name="卸载应用" data-tip="调起系统卸载窗口；默认先把账本备份到公共 Download/鱼记备份/，卸载后重装会自动恢复。">卸载应用（默认保留数据）</button>
+              <p class="cap-divider is-risk">卸载应用 · 数据去留</p>
+              <label class="cap-switch-row" for="keepDataChk">
+                <span class="cap-switch-text">卸载后保留数据</span>
+                <span class="cap-keep-state" id="keepDataState">开（默认）</span>
+                <input class="cap-switch-input" id="keepDataChk" type="checkbox" checked>
+                <span class="cap-switch" aria-hidden="true"></span>
+              </label>
+              <div class="keep-info" id="keepDataInfo">
+                <p class="keep-info-lead">当前账本存于「内部存储」</p>
+                <p class="keep-info-path">「<span id="keepDataPath"></span>」</p>
+                <p class="keep-info-effect" id="keepDataEffect"></p>
               </div>
             </div>
-            <p class="cap-dbpath" id="appDbPath" hidden>账本位置：<span></span></p>
             <input type="file" id="importFile" accept="application/json,.json" hidden>
           </div>
         </div>
@@ -2238,12 +2342,12 @@ try {
         <div class="viz-layout is-hero">
           <div class="donut-stack">
             <article class="card donut-card is-exp">
-              <p class="donut-title">本月支出</p>
+              <p class="donut-title" id="donutExpTitle">本月支出</p>
               <div class="donut-holder" id="donutExp"></div>
               <p class="donut-foot" id="donutExpFoot"></p>
             </article>
             <article class="card donut-card is-inc">
-              <p class="donut-title">本月收入</p>
+              <p class="donut-title" id="donutIncTitle">本月收入</p>
               <div class="donut-holder" id="donutInc"></div>
               <p class="donut-foot" id="donutIncFoot"></p>
             </article>
@@ -2980,13 +3084,59 @@ try {
   } catch (e) {}
       function savePrefs() { try { localStorage.setItem(CAL_KEY, JSON.stringify(calPrefs)); } catch (e) {} }
 
-  var lunarFmt = null;
-  try {
-    lunarFmt = new Intl.DateTimeFormat('zh-CN-u-ca-chinese', { month: 'long', day: 'numeric' });
-    /* 必须用 formatToParts 取结构化字段；format() 的字符串在不同 ICU 版本里格式不一致 */
-    if (typeof lunarFmt.formatToParts !== 'function') lunarFmt = null;
-    else lunarFmt.formatToParts(new Date());
-  } catch (e) { lunarFmt = null; }
+  /* 中国农历（1900–2099）：内置年月大小表自己推算，不再用 Web 引擎的 Intl 中文历。
+     实测 V8 / ICU 在 1999、2012、2018、2027、2030 共 5 处与权威历表差一天
+     （2027 与 2030 连春节都会整体错位），手机 WebView 的 ICU 版本又不可控，
+     所以改成查表法——1900–2099 逐日与权威农历数据一致，节日、闰月、大小月都准。 */
+  var LUNAR_INFO = [
+    0x04bd8, 0x04ae0, 0x0a570, 0x054d5, 0x0d260, 0x0d950,
+    0x16554, 0x056a0, 0x09ad0, 0x055d2, 0x04ae0, 0x0a5b6,
+    0x0a4d0, 0x0d250, 0x1d255, 0x0b540, 0x0d6a0, 0x0ada2,
+    0x095b0, 0x14977, 0x04970, 0x0a4b0, 0x0b4b5, 0x06a50,
+    0x06d40, 0x1ab54, 0x02b60, 0x09570, 0x052f2, 0x04970,
+    0x06566, 0x0d4a0, 0x0ea50, 0x06e95, 0x05ad0, 0x02b60,
+    0x186e3, 0x092e0, 0x1c8d7, 0x0c950, 0x0d4a0, 0x1d8a6,
+    0x0b550, 0x056a0, 0x1a5b4, 0x025d0, 0x092d0, 0x0d2b2,
+    0x0a950, 0x0b557, 0x06ca0, 0x0b550, 0x15355, 0x04da0,
+    0x0a5d0, 0x14573, 0x052b0, 0x0a9a8, 0x0e950, 0x06aa0,
+    0x0aea6, 0x0ab50, 0x04b60, 0x0aae4, 0x0a570, 0x05260,
+    0x0f263, 0x0d950, 0x05b57, 0x056a0, 0x096d0, 0x04dd5,
+    0x04ad0, 0x0a4d0, 0x0d4d4, 0x0d250, 0x0d558, 0x0b540,
+    0x0b5a0, 0x195a6, 0x095b0, 0x049b0, 0x0a974, 0x0a4b0,
+    0x0b27a, 0x06a50, 0x06d40, 0x0af46, 0x0ab60, 0x09570,
+    0x04af5, 0x04970, 0x064b0, 0x074a3, 0x0ea50, 0x06b58,
+    0x05ac0, 0x0ab60, 0x096d5, 0x092e0, 0x0c960, 0x0d954,
+    0x0d4a0, 0x0da50, 0x07552, 0x056a0, 0x0abb7, 0x025d0,
+    0x092d0, 0x0cab5, 0x0a950, 0x0b4a0, 0x0baa4, 0x0ad50,
+    0x055d9, 0x04ba0, 0x0a5b0, 0x15176, 0x052b0, 0x0a930,
+    0x07954, 0x06aa0, 0x0ad50, 0x05b52, 0x04b60, 0x0a6e6,
+    0x0a4e0, 0x0d260, 0x0ea65, 0x0d530, 0x05aa0, 0x076a3,
+    0x096d0, 0x04afb, 0x04ad0, 0x0a4d0, 0x1d0b6, 0x0d250,
+    0x0d520, 0x0dd45, 0x0b5a0, 0x056d0, 0x055b2, 0x049b0,
+    0x0a577, 0x0a4b0, 0x0aa50, 0x1b255, 0x06d20, 0x0ada0,
+    0x14b63, 0x09370, 0x049f8, 0x04970, 0x064b0, 0x168a6,
+    0x0ea50, 0x06aa0, 0x1a6c4, 0x0aae0, 0x092e0, 0x0d2e3,
+    0x0c960, 0x0d557, 0x0d4a0, 0x0da50, 0x05d55, 0x056a0,
+    0x0a6d0, 0x055d4, 0x052d0, 0x0a9b8, 0x0a950, 0x0b4a0,
+    0x0b6a6, 0x0ad50, 0x055a0, 0x0aba4, 0x0a5b0, 0x052b0,
+    0x0b273, 0x06930, 0x07337, 0x06aa0, 0x0ad50, 0x14b55,
+    0x04b60, 0x0a570, 0x054e4, 0x0d160, 0x0e968, 0x0d520,
+    0x0daa0, 0x16aa6, 0x056d0, 0x04ae0, 0x0a9d4, 0x0a2d0,
+    0x0d150, 0x0f252
+  ];
+  /* 表编码：低 4 位 = 闰月月份（0 表示无闰月），bit16 = 闰月是否 30 天，
+     bit15…bit4 = 正月…十二月是否 30 天（1 长月 / 0 小月 29 天）。 */
+  function lLeapMonth(y) { return LUNAR_INFO[y - 1900] & 0xf; }
+  function lLeapDays(y) {
+    if (!lLeapMonth(y)) return 0;
+    return (LUNAR_INFO[y - 1900] & 0x10000) ? 30 : 29;
+  }
+  function lMonthDays(y, m) { return (LUNAR_INFO[y - 1900] & (0x10000 >> m)) ? 30 : 29; }
+  function lYearDays(y) {
+    var sum = 348;
+    for (var i = 0x8000; i > 0x8; i >>= 1) sum += (LUNAR_INFO[y - 1900] & i) ? 1 : 0;
+    return sum + lLeapDays(y);
+  }
     var CN_NUM = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
   function cnDay(n) {
     if (n === 10) return '初十';
@@ -2997,62 +3147,181 @@ try {
     if (n < 30) return '廿' + CN_NUM[n - 21];
     return '';
   }
-  function lunarDayNum(t) {
-    if (/^\d+$/.test(t)) return +t;
-    if (t === '初十') return 10;
-    if (t === '二十') return 20;
-    if (t === '三十') return 30;
-    if (t.charAt(0) === '初') return CN_NUM.indexOf(t.charAt(1)) + 1;
-    if (t.charAt(0) === '十') return 10 + CN_NUM.indexOf(t.charAt(1)) + 1;
-    if (t.charAt(0) === '廿') return 20 + CN_NUM.indexOf(t.charAt(1)) + 1;
-    return 0;
-  }
-  /* Intl 中国历返回的是「十月4日」：month=十月 / day=4 / literal=日，不是「初四」。
-     旧版用 format() 字符串按中文日名切分，day 恒为 1，导致每天都被当成初一。 */
-  function parseLunarDay(s) {
-    s = String(s || '').replace(/日$/, '').trim();
-    if (/^\d+$/.test(s)) return +s;
-    var n = lunarDayNum(s);
-    if (n) return n;
-    var i = CN_NUM.indexOf(s);
-    return i >= 0 ? i + 1 : 0;
-  }
-  function lunarMonthNum(mon) {
-    if (/^\d+$/.test(mon)) return +mon;
-    if (mon === '正') return 1;
-    if (mon === '冬') return 11;
-    if (mon === '腊') return 12;
-    if (mon === '十一') return 11;
-    if (mon === '十二') return 12;
-    return ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'].indexOf(mon) + 1;
-  }
+  /* 十二个月的叫法沿用旧版 Intl 的输出：十一月 / 腊月（不再用「冬月」，避免同一格文案换说法） */
+  var LUNAR_MON = ['正', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '腊'];
   function lunarOf(dt) {
-    if (!lunarFmt) return null;
-    var p = {};
-    try {
-      lunarFmt.formatToParts(dt).forEach(function (x) {
-        if (x.type === 'month' || x.type === 'day') p[x.type] = x.value;
-      });
-    } catch (e) { return null; }
-    var mRaw = p.month || '';
-    if (!mRaw) return null;
-    var leap = mRaw.charAt(0) === '闰';
-    if (leap) mRaw = mRaw.slice(1);
-    var mon = mRaw.replace(/月$/, '');
-    var month = lunarMonthNum(mon);
-    var day = parseLunarDay(p.day);
-    if (!month || !day) return null;
-    var text = cnDay(day) || String(p.day || '');
-    return { mon: mon, month: month, day: day, text: text, leap: leap,
-             full: (leap ? '闰' : '') + mon + '月' + text };
+    var y = dt.getFullYear(), m = dt.getMonth() + 1, d = dt.getDate();
+    if (y < 1900 || y > 2099) return null;
+    /* 1900-01-31 是农历 1900 年正月初一；用 UTC 算天数，避开时区/夏令时 */
+    var offset = Math.round((Date.UTC(y, m - 1, d) - Date.UTC(1900, 0, 31)) / 86400000);
+    if (offset < 0) return null;
+    var ly = 1900, days = 0;
+    while (ly <= 2099) {
+      days = lYearDays(ly);
+      if (offset < days) break;
+      offset -= days; ly++;
+    }
+    if (ly > 2099) return null;
+    var leap = lLeapMonth(ly), month = 12, day = 1, isLeap = false, rest = offset;
+    for (var mm = 1; mm <= 12; mm++) {
+      var len = lMonthDays(ly, mm);
+      if (rest < len) { month = mm; day = rest + 1; break; }
+      rest -= len;
+      if (leap === mm) {                       // 闰月紧跟在同号月之后
+        var ll = lLeapDays(ly);
+        if (rest < ll) { month = mm; day = rest + 1; isLeap = true; break; }
+        rest -= ll;
+      }
+      day = rest + 1;
+    }
+    var mon = LUNAR_MON[month - 1];
+    var text = cnDay(day) || String(day);
+    return { mon: mon, month: month, day: day, text: text, leap: isLeap,
+             full: (isLeap ? '闰' : '') + mon + '月' + text };
   }
-  var SOLAR_FEST = { '1-1': '元旦', '2-14': '情人节', '3-8': '妇女节', '4-1': '愚人节', '5-1': '劳动节', '5-4': '青年节', '6-1': '儿童节', '7-1': '建党节', '8-1': '建军节', '9-10': '教师节', '10-1': '国庆节', '12-24': '平安夜', '12-25': '圣诞节' };
-  var LUNAR_FEST = { '1-1': '春节', '1-15': '元宵', '2-2': '龙抬头', '5-5': '端午', '7-7': '七夕', '8-15': '中秋', '9-9': '重阳', '12-8': '腊八', '12-23': '小年' };
-  function qingMingDay(y) { if (y < 2000 || y > 2099) return 0; var Y = y % 100; return Math.floor(Y * 0.2422 + 4.81) - Math.floor(Y / 4); }
+  /* ---------- 二十四节气：按太阳视黄经现算，不依赖任何节气表 ----------
+     VSOP87 地球黄经/距离截断级数（Meeus《天文算法》附录 III），视黄经误差 <1″，
+     折成时间约 20 秒；定位用牛顿迭代，再减 ΔT 换算成世界时，最后按北京时间（UTC+8）
+     取日期，与紫金山天文台公布的节气日期一致（2025/2026 逐项核对，误差 <1 分钟）。 */
+  var TERM_NAME = ['小寒', '大寒', '立春', '雨水', '惊蛰', '春分', '清明', '谷雨', '立夏', '小满', '芒种', '夏至',
+                   '小暑', '大暑', '立秋', '处暑', '白露', '秋分', '寒露', '霜降', '立冬', '小雪', '大雪', '冬至'];
+  /* 级数格式：A, B, C 三元一组，Σ A·cos(B + C·t)，t 为儒略千年 */
+  var VSOP_L0 = [
+    175347046, 0, 0, 3341656, 4.6692568, 6283.07585, 34894, 4.6261, 12566.1517, 3497, 2.7441, 5753.3849,
+    3418, 2.8289, 3.5231, 3136, 3.6277, 77713.7715, 2676, 4.4181, 7860.4194, 2343, 6.1352, 3930.2097,
+    1324, 0.7425, 11506.7698, 1273, 2.0371, 529.691, 1199, 1.1096, 1577.3435, 990, 5.233, 5884.927,
+    902, 2.045, 26.298, 857, 3.508, 398.149, 780, 1.179, 5223.694, 753, 2.533, 5507.553,
+    505, 4.583, 18849.228, 492, 4.205, 775.523, 357, 2.92, 0.067, 317, 5.849, 11790.629,
+    284, 1.899, 796.298, 271, 0.315, 10977.079, 243, 0.345, 5486.778, 206, 4.806, 2544.314,
+    205, 1.869, 5573.143, 202, 2.458, 6069.777, 156, 0.833, 213.299, 132, 3.411, 2942.463,
+    126, 1.083, 20.775, 115, 0.645, 0.98, 103, 0.636, 4694.003, 102, 0.976, 15720.839,
+    102, 4.267, 7.114, 99, 6.21, 2146.17, 98, 0.68, 155.42, 86, 5.98, 161000.69,
+    85, 1.3, 6275.96, 85, 3.67, 71430.7, 80, 1.81, 17260.15, 79, 3.04, 12036.46,
+    75, 1.76, 5088.63, 74, 3.5, 3154.69, 74, 4.68, 801.82, 70, 0.83, 9437.76,
+    62, 3.98, 8827.39, 61, 1.82, 7084.9, 57, 2.78, 6286.6, 56, 4.39, 14143.5,
+    56, 3.47, 6279.55, 52, 0.19, 12139.55, 52, 1.33, 1748.02, 51, 0.28, 5856.48,
+    49, 0.49, 1194.45, 41, 5.37, 8429.24, 41, 2.4, 19651.05, 39, 6.17, 10447.39,
+    37, 6.04, 10213.29, 37, 2.57, 1059.38, 36, 1.71, 2352.87, 36, 1.78, 6812.77,
+    33, 0.59, 17789.85, 30, 0.44, 83996.85, 30, 2.74, 1349.87, 25, 3.16, 4690.48];
+  var VSOP_L1 = [
+    628331966747, 0, 0, 206059, 2.678235, 6283.07585, 4303, 2.6351, 12566.1517, 425, 1.59, 3.523,
+    119, 5.796, 26.298, 109, 2.966, 1577.344, 93, 2.59, 18849.23, 72, 1.14, 529.69,
+    68, 1.87, 398.15, 67, 4.41, 5507.55, 59, 2.89, 5223.69, 56, 2.17, 155.42,
+    45, 0.4, 796.3, 36, 0.47, 775.52, 29, 2.65, 7.11, 21, 5.34, 0.98,
+    19, 1.85, 5486.78, 19, 4.97, 213.3, 17, 2.99, 6275.96, 16, 0.03, 2544.31,
+    16, 1.43, 2146.17, 15, 1.21, 10977.08, 12, 2.83, 1748.02, 12, 3.26, 5088.63,
+    12, 5.27, 1194.45, 12, 2.08, 4694, 11, 0.77, 553.57, 10, 1.3, 6286.6,
+    10, 4.24, 1349.87, 9, 2.7, 242.73, 9, 5.64, 951.72, 8, 5.3, 2352.87,
+    6, 2.65, 9437.76, 6, 4.67, 4690.48];
+  var VSOP_L2 = [
+    52919, 0, 0, 8720, 1.0721, 6283.0758, 309, 0.867, 12566.152, 27, 0.05, 3.52,
+    16, 5.19, 26.3, 16, 3.68, 155.42, 10, 0.76, 18849.23, 9, 2.06, 77713.77,
+    7, 0.83, 775.52, 5, 4.66, 1577.34, 4, 1.03, 7.11, 4, 3.44, 5573.14,
+    3, 5.14, 796.3, 3, 6.05, 5507.55, 3, 1.19, 242.73, 3, 6.12, 529.69,
+    3, 0.31, 398.15, 3, 2.28, 553.57, 2, 4.38, 5223.69, 2, 3.75, 0.98];
+  var VSOP_L3 = [289, 5.844, 6283.076, 35, 0, 0, 17, 5.49, 12566.15, 3, 5.2, 155.42,
+                 1, 4.72, 3.52, 1, 5.3, 18849.23, 1, 5.97, 242.73];
+  var VSOP_L4 = [114, 3.142, 0, 8, 4.13, 6283.08, 1, 3.84, 12566.15];
+  var VSOP_L5 = [1, 3.14, 0];
+  var VSOP_R0 = [
+    100013989, 0, 0, 1670700, 3.0984635, 6283.07585, 13956, 3.05525, 12566.1517, 3084, 5.1985, 77713.7715,
+    1628, 1.1739, 5753.3849, 1576, 2.8469, 7860.4194, 925, 5.453, 11506.77, 542, 4.564, 3930.21,
+    472, 3.661, 5884.927, 346, 0.964, 5507.553, 329, 5.9, 5223.694, 307, 0.299, 5573.143,
+    243, 4.273, 11790.629, 212, 5.847, 1577.344, 186, 5.022, 10977.079, 175, 3.012, 18849.228,
+    110, 5.055, 5486.778, 98, 0.89, 6069.78, 86, 5.69, 15720.84, 86, 1.27, 161000.69,
+    65, 0.27, 17260.15, 63, 0.92, 529.69, 57, 2.01, 83996.85, 56, 5.24, 71430.7,
+    49, 3.25, 2544.31, 47, 2.58, 775.52, 45, 5.54, 9437.76, 43, 6.01, 6275.96,
+    39, 5.36, 4694, 38, 2.39, 8827.39, 37, 0.83, 19651.05, 37, 4.9, 12139.55,
+    36, 1.67, 12036.46, 35, 1.84, 2942.46, 33, 0.24, 7084.9, 32, 0.18, 5088.63,
+    32, 1.78, 398.15, 28, 1.21, 6286.6, 28, 1.9, 6279.55, 26, 4.59, 10447.39];
+  var VSOP_R1 = [103019, 1.10749, 6283.07585, 1721, 1.0644, 12566.1517, 702, 3.142, 0,
+                 32, 1.02, 18849.23, 31, 2.84, 5507.55, 25, 1.32, 5223.69,
+                 18, 1.42, 1577.34, 10, 5.91, 10977.08, 9, 1.42, 6275.96, 9, 0.27, 5486.78];
+  var VSOP_R2 = [4359, 5.7846, 6283.0758, 124, 5.579, 12566.152, 12, 3.14, 0,
+                 9, 3.63, 77713.77, 6, 1.87, 5573.14, 3, 5.47, 18849.23];
+  var VSOP_R3 = [145, 4.273, 6283.076, 7, 3.92, 12566.15];
+  var VSOP_R4 = [4, 2.56, 6283.08];
+  function vsopSum(a, t) {
+    var s = 0;
+    for (var i = 0; i < a.length; i += 3) s += a[i] * Math.cos(a[i + 1] + a[i + 2] * t);
+    return s;
+  }
+  function earthLon(jd) {
+    var t = (jd - 2451545.0) / 365250.0, t2 = t * t, t3 = t2 * t, t4 = t3 * t, t5 = t4 * t;
+    return (vsopSum(VSOP_L0, t) + vsopSum(VSOP_L1, t) * t + vsopSum(VSOP_L2, t) * t2 +
+            vsopSum(VSOP_L3, t) * t3 + vsopSum(VSOP_L4, t) * t4 + vsopSum(VSOP_L5, t) * t5) / 1e8;
+  }
+  function earthDist(jd) {
+    var t = (jd - 2451545.0) / 365250.0, t2 = t * t, t3 = t2 * t, t4 = t3 * t;
+    return (vsopSum(VSOP_R0, t) + vsopSum(VSOP_R1, t) * t + vsopSum(VSOP_R2, t) * t2 +
+            vsopSum(VSOP_R3, t) * t3 + vsopSum(VSOP_R4, t) * t4) / 1e8;
+  }
+  /* 太阳视黄经（度，0–360）：几何黄经 + 光行差 + 章动 */
+  function sunLon(jd) {
+    var T = (jd - 2451545.0) / 36525.0;
+    var lam = (earthLon(jd) * 180 / Math.PI + 180) % 360;
+    lam -= 0.005693 / earthDist(jd);
+    var om = (125.04452 - 1934.136261 * T + 0.0020708 * T * T) * Math.PI / 180;
+    var ls = (280.4665 + 36000.7698 * T) * Math.PI / 180;
+    var lm = (218.3165 + 481267.8813 * T) * Math.PI / 180;
+    lam += (-17.20 * Math.sin(om) - 1.32 * Math.sin(2 * ls) - 0.23 * Math.sin(2 * lm) + 0.21 * Math.sin(2 * om)) / 3600;
+    return ((lam % 360) + 360) % 360;
+  }
+  /* ΔT = TT − UT，秒。用 Espenak–Meeus 的 2005–2050 拟合式，够本世纪用 */
+  function deltaT(y) {
+    var n = y - 2000;
+    return Math.max(0, Math.min(120, 62.92 + 0.32217 * n + 0.005589 * n * n));
+  }
+  var termMapCache = {};
+  /* 某年 24 个节气 → { '11-22': '小雪', ... }，按北京时间取日期 */
+  function termsOfYear(y) {
+    if (termMapCache[y]) return termMapCache[y];
+    var map = {}, base = Date.UTC(2000, 0, 6) / 86400000 + 2440587.5, dt = deltaT(y) / 86400;
+    for (var k = 0; k < 24; k++) {
+      var target = (285 + k * 15) % 360;
+      var jd = base + ((y - 2000) * 24 + k) * 15.2184;
+      for (var it = 0; it < 4; it++) {
+        var dif = target - sunLon(jd);
+        dif = ((dif + 180) % 360 + 360) % 360 - 180;
+        jd += dif / 0.9856473;
+      }
+      /* 先减 ΔT 回到世界时，再加 8 小时得北京时间 */
+      var ms = (jd - dt - 2440587.5) * 86400000 + 8 * 3600000;
+      var d2 = new Date(ms);
+      map[(d2.getUTCMonth() + 1) + '-' + d2.getUTCDate()] = TERM_NAME[k];
+    }
+    termMapCache[y] = map;
+    return map;
+  }
+  function termOf(dt) {
+    var y = dt.getFullYear();
+    if (y < 1900 || y > 2099) return '';
+    var map = termsOfYear(y);
+    return map[(dt.getMonth() + 1) + '-' + dt.getDate()] || '';
+  }
+
+  /* 公历节日：固定日期的直接列表；按星期定位的（母亲节/父亲节/感恩节）单独算。
+     农历节日由上面的农历表实时推算，除夕在调用处判（次日为正月初一）。 */
+  var SOLAR_FEST = {
+    '1-1': '元旦', '2-14': '情人节', '3-8': '妇女节', '3-12': '植树节', '4-1': '愚人节',
+    '5-1': '劳动节', '5-4': '青年节', '6-1': '儿童节', '7-1': '建党节', '8-1': '建军节',
+    '9-10': '教师节', '10-1': '国庆节', '10-31': '万圣夜', '12-24': '平安夜', '12-25': '圣诞节'
+  };
+  var LUNAR_FEST = { '1-1': '春节', '1-15': '元宵', '2-2': '龙抬头', '3-3': '上巳', '5-5': '端午',
+    '7-7': '七夕', '7-15': '中元', '8-15': '中秋', '9-9': '重阳', '10-1': '寒衣', '12-8': '腊八', '12-23': '小年' };
+  /* 某月第 n 个星期 wd（0=周日）是几号；超出当月返回 0 */
+  function nthWeekday(y, m, wd, n) {
+    var first = new Date(y, m - 1, 1).getDay();
+    var d = 1 + ((wd - first + 7) % 7) + (n - 1) * 7;
+    return d <= daysInMonth(y, m) ? d : 0;
+  }
   function festOf(dt, lunar) {
-    var md = (dt.getMonth() + 1) + '-' + dt.getDate();
+    var y = dt.getFullYear(), m = dt.getMonth() + 1, d = dt.getDate();
+    var md = m + '-' + d;
     if (SOLAR_FEST[md]) return SOLAR_FEST[md];
-    if (dt.getMonth() === 3 && dt.getDate() === qingMingDay(dt.getFullYear())) return '清明';
+    if (m === 5 && d === nthWeekday(y, 5, 0, 2)) return '母亲节';
+    if (m === 6 && d === nthWeekday(y, 6, 0, 3)) return '父亲节';
+    if (m === 11 && d === nthWeekday(y, 11, 4, 4)) return '感恩节';
     if (lunar && !lunar.leap && LUNAR_FEST[lunar.month + '-' + lunar.day]) return LUNAR_FEST[lunar.month + '-' + lunar.day];
     return '';
   }
@@ -3093,11 +3362,13 @@ try {
       var dt = new Date(y, m - 1, d);
       if (dt > today) cls += ' is-future';
                   var lu = (calPrefs.lunar || calPrefs.fest) ? lunarOf(dt) : null;
+      /* 节日与节气共用一格：先节日（含按星期定位的感恩节等），再节气，最后才是农历 */
       var fest = calPrefs.fest ? festOf(dt, lu) : '';
       if (calPrefs.fest && !fest && lu) {
         var nx = lunarOf(new Date(y, m - 1, d + 1));
         if (nx && nx.month === 1 && nx.day === 1 && !nx.leap) fest = '除夕';
       }
+      if (calPrefs.fest && !fest) fest = termOf(dt);
       var sub = fest || (calPrefs.lunar ? lunarSub(lu) : '');
       /* 星期只在表头显示一行，不再逐个日期格重复标注 */
       var tip = s ? ('收入 ' + money(s.inc) + ' · 支出 ' + money(s.exp) + ' · ' + s.n + ' 笔') : '无记录';
@@ -3115,11 +3386,11 @@ try {
     var dt = new Date(y, m - 1, d);
         document.getElementById('calDayName').textContent = pad(m) + ' 月 ' + pad(d) + ' 日';
     var luSel = (calPrefs.lunar || calPrefs.fest) ? lunarOf(dt) : null;
-    var festSel = calPrefs.fest ? festOf(dt, luSel) : '';
+    var festSel = calPrefs.fest ? (festOf(dt, luSel) || termOf(dt)) : '';
     var extra = [];
-    if (festSel) extra.push(festSel);
+    if (festSel) extra.push('<span class="cal-fest-txt">' + esc(festSel) + '</span>');
     if (luSel && calPrefs.lunar) extra.push('农历' + luSel.full);
-    document.getElementById('calDayDow').textContent =
+    document.getElementById('calDayDow').innerHTML =
       (calPrefs.week ? DOW[dt.getDay()] + ' · ' : '') + (extra.length ? extra.join(' · ') + ' · ' : '') + rs.length + ' 笔';
     document.getElementById('calStats').innerHTML =
       '<div class="cal-stat"><span>当日收入</span><b class="' + (inc > 0 ? 'pos' : 'zero') + '">' + money(inc) + '</b></div>' +
@@ -3158,7 +3429,8 @@ try {
       { label: '本月结余', value: money(a.net), cls: a.net >= 0 ? 'pos' : 'neg', hint: '结余即自动存入', note: '结余 = 收入 − 支出', glow: a.net > 0 },
       { label: '异常账户', value: money(badSum), cls: badSum < 0 ? 'neg' : 'pos', list: bad }
     ];
-    document.getElementById('kpiGrid').innerHTML = cards.map(function (c) {
+    var grid = document.getElementById('kpiGrid');
+    grid.innerHTML = cards.map(function (c) {
       var body;
       if (c.hint) {
         /* 本月结余：涨跌对比行换成一句口径说明 */
@@ -3182,6 +3454,9 @@ try {
         (c.note ? '<p class="kpi-note">' + c.note + '</p>' : '') +
         '</article>';
     }).join('');
+    /* 「显示收支卡片」关掉时只放行异常账户卡：靠这个类判断当前是否真有负余额账户，
+       没有异常账户就整组不显示（CSS 见 body.hide-kpi 规则）。 */
+    grid.classList.toggle('has-bad', bad.length > 0);
     lockBadListHeight();
     var vn = document.getElementById('vizNote');
         if (vn) vn.textContent = view.y + ' 年 ' + view.m + ' 月·支出 ' + money(a.exp) + '·' + cats.length + ' 个分类';
@@ -3228,6 +3503,9 @@ try {
     var lists = document.querySelectorAll('#kpiGrid .kpi-bad-list'), out = [];
     for (var j = 0; j < lists.length; j++) {
       var list = lists[j];
+      /* 卡片被「显示收支卡片」关掉时没有布局，测出来是 0；此时不写限高，
+         等开关重新打开后再由 renderKPI() 触发一次真实测量。 */
+      if (!list.offsetParent) { out.push({ list: list, h: null }); continue; }
       var rows = list.querySelectorAll('.kpi-bad-row');
       if (rows.length <= 2) { out.push({ list: list, h: null }); continue; }
       var cs = getComputedStyle(list);
@@ -3600,16 +3878,41 @@ try {
     }
         return '<div class="donut-wrap"><svg class="donut" viewBox="0 0 200 200" role="img" aria-label="' + aria + '"><circle class="track" cx="100" cy="100" r="' + R + '"/><g transform="rotate(-90 100 100)">' + segs.join('') + '</g></svg><span class="donut-center"><b>' + moneyTight(total) + '</b></span></div>';
   }
+  /* 环形图的统计范围跟随右侧柱折线图的粒度联动：
+     年 → 本年（view.y 全年）；月 → 当月（view.y-view.m）；日 → 当日（view.day）。 */
+  function catScope() {
+    var y = view.y, m = view.m, recs;
+    if (chartGrain === 'year') {
+      recs = store.records.filter(function (r) { return +String(r.date).slice(0, 4) === y; });
+      return { recs: recs, label: '本年', range: y + ' 年' };
+    }
+    if (chartGrain === 'day') {
+      var d = view.day || latestDayIn(y, m), key = y + '-' + pad(m) + '-' + pad(d);
+      recs = store.records.filter(function (r) { return String(r.date) === key; });
+      return { recs: recs, label: '当日', range: m + ' 月 ' + d + ' 日' };
+    }
+    return { recs: recsOf(y, m), label: '本月', range: y + ' 年 ' + m + ' 月' };
+  }
   function renderCategory() {
-    var a = agg(view.y, view.m), cats = categories(a.recs), total = a.exp;
+    /* 环形图跟随图表粒度（年→本年 / 月→当月 / 日→当日）；
+       下方「分类明细」列表仍固定本月，避免日粒度下把整块列表清空。 */
+    var scope = catScope();
+    var dRecs = scope.recs;
+    var dTotal = sumOf(dRecs, 'out'), dIncTotal = sumOf(dRecs, 'in'), dCats = categories(dRecs);
+    var a = agg(view.y, view.m);
+    var cats = categories(a.recs), total = a.exp, incTotal = a.inc;
+    var inCats = groupCats(a.recs, 'in');
     document.getElementById('catHead').textContent = view.m + ' 月：分类明细';
     var exEl = document.getElementById('donutExp'), exFoot = document.getElementById('donutExpFoot');
     var inEl = document.getElementById('donutInc'), inFoot = document.getElementById('donutIncFoot');
-    var inCats = groupCats(a.recs, 'in'), inTotal = a.inc;
-    if (exEl) exEl.innerHTML = donutSVG(cats, total, EXP_TONES, '本月支出分类占比环形图');
-    if (inEl) inEl.innerHTML = donutSVG(inCats, inTotal, INC_TONES, '本月收入来源环形图');
-    if (exFoot) exFoot.textContent = total ? (cats.length + ' 个分类 · 前两类占 ' + pct(cats.slice(0, 2).reduce(function (s, c) { return s + c.amount; }, 0) / total * 100)) : '本月还没有支出';
-    if (inFoot) inFoot.textContent = inTotal ? (inCats.length + ' 个来源 · 最大一笔 ' + money(inCats[0].amount)) : '本月还没有收入';
+    var exTitle = document.getElementById('donutExpTitle'), inTitle = document.getElementById('donutIncTitle');
+    var dInCats = groupCats(dRecs, 'in');
+    if (exTitle) exTitle.textContent = scope.label + '支出';
+    if (inTitle) inTitle.textContent = scope.label + '收入';
+    if (exEl) exEl.innerHTML = donutSVG(dCats, dTotal, EXP_TONES, scope.range + '支出分类占比环形图');
+    if (inEl) inEl.innerHTML = donutSVG(dInCats, dIncTotal, INC_TONES, scope.range + '收入来源环形图');
+    if (exFoot) exFoot.textContent = dTotal ? (dCats.length + ' 个分类 · 前两类占 ' + pct(dCats.slice(0, 2).reduce(function (s, c) { return s + c.amount; }, 0) / dTotal * 100)) : scope.label + '还没有支出';
+    if (inFoot) inFoot.textContent = dIncTotal ? (dInCats.length + ' 个来源 · 最大一笔 ' + money(dInCats[0].amount)) : scope.label + '还没有收入';
 
     var exList = document.getElementById('catListExp');
     var incList = document.getElementById('catListInc');
@@ -3631,13 +3934,13 @@ try {
     }
 
     // 右栏：收入来源（青）
-    if (!inTotal) {
+    if (!incTotal) {
       incList.innerHTML = '<p class="empty">本月还没有收入。</p>';
     } else {
       inCats.sort(function (x, y) { return y.amount - x.amount; });
       var maxInc = inCats[0].amount;
       incList.innerHTML = inCats.map(function (c) {
-        var p = c.amount / inTotal * 100;
+        var p = c.amount / incTotal * 100;
         return '<div class="cat"><span class="cat-name">' + esc(c.name) + '</span>' +
           '<span class="cat-bar"><i style="width:' + r2(c.amount / maxInc * 100) + '%"></i></span>' +
           '<span class="cat-pct">' + pct(p) + '</span>' +
@@ -3651,10 +3954,10 @@ try {
           return (k ? '、' : '') + '<b>' + esc(c.name) + '</b> ' + pct(c.amount / total * 100);
         }).join('') + '，合计 <b>' + pct(cats.slice(0, 3).reduce(function (s, c) { return s + c.amount; }, 0) / total * 100) + '</b>'
       : '暂无支出';
-    if (incTop3) incTop3.innerHTML = inTotal
+    if (incTop3) incTop3.innerHTML = incTotal
       ? inCats.slice(0, 3).map(function (c, k) {
-          return (k ? '、' : '') + '<b>' + esc(c.name) + '</b> ' + pct(c.amount / inTotal * 100);
-        }).join('') + '，合计 <b>' + pct(inCats.slice(0, 3).reduce(function (s, c) { return s + c.amount; }, 0) / inTotal * 100) + '</b>'
+          return (k ? '、' : '') + '<b>' + esc(c.name) + '</b> ' + pct(c.amount / incTotal * 100);
+        }).join('') + '，合计 <b>' + pct(inCats.slice(0, 3).reduce(function (s, c) { return s + c.amount; }, 0) / incTotal * 100) + '</b>'
       : '暂无收入';
   }
 
@@ -4055,138 +4358,11 @@ try {
   })();
 
   /* ---------- 流水日期：年-月-日 / 年-节日 ---------- */
-  // 农历节日对照表由 solarlunar(1900-2100 农历数据) 生成，覆盖 2020-2035；公历节日按 MM-DD 年年生效。
-  // 自定义节日：往 FLOW_SOLAR_FEST 加 'MM-DD':'名称'，或往 FLOW_LUNAR_FEST 加 'YYYY-MM-DD':'名称'。
-  var FLOW_LUNAR_FEST = {
-    '2020-01-24':'除夕',
-    '2020-01-25':'春节',
-    '2020-02-08':'元宵节',
-    '2020-04-04':'清明节',
-    '2020-06-25':'端午节',
-    '2020-08-25':'七夕',
-    '2020-10-01':'中秋节',
-    '2020-10-25':'重阳节',
-    '2021-02-11':'除夕',
-    '2021-02-12':'春节',
-    '2021-02-26':'元宵节',
-    '2021-04-04':'清明节',
-    '2021-06-14':'端午节',
-    '2021-08-14':'七夕',
-    '2021-09-21':'中秋节',
-    '2021-10-14':'重阳节',
-    '2022-01-31':'除夕',
-    '2022-02-01':'春节',
-    '2022-02-15':'元宵节',
-    '2022-04-05':'清明节',
-    '2022-06-03':'端午节',
-    '2022-08-04':'七夕',
-    '2022-09-10':'中秋节',
-    '2022-10-04':'重阳节',
-    '2023-01-21':'除夕',
-    '2023-01-22':'春节',
-    '2023-02-05':'元宵节',
-    '2023-04-05':'清明节',
-    '2023-06-22':'端午节',
-    '2023-08-22':'七夕',
-    '2023-09-29':'中秋节',
-    '2023-10-23':'重阳节',
-    '2024-02-09':'除夕',
-    '2024-02-10':'春节',
-    '2024-02-24':'元宵节',
-    '2024-04-04':'清明节',
-    '2024-06-10':'端午节',
-    '2024-08-10':'七夕',
-    '2024-09-17':'中秋节',
-    '2024-10-11':'重阳节',
-    '2025-01-28':'除夕',
-    '2025-01-29':'春节',
-    '2025-02-12':'元宵节',
-    '2025-04-04':'清明节',
-    '2025-05-31':'端午节',
-    '2025-08-29':'七夕',
-    '2025-10-06':'中秋节',
-    '2025-10-29':'重阳节',
-    '2026-02-16':'除夕',
-    '2026-02-17':'春节',
-    '2026-03-03':'元宵节',
-    '2026-04-05':'清明节',
-    '2026-06-19':'端午节',
-    '2026-08-19':'七夕',
-    '2026-09-25':'中秋节',
-    '2026-10-18':'重阳节',
-    '2027-02-05':'除夕',
-    '2027-02-06':'春节',
-    '2027-02-20':'元宵节',
-    '2027-04-05':'清明节',
-    '2027-06-09':'端午节',
-    '2027-08-08':'七夕',
-    '2027-09-15':'中秋节',
-    '2027-10-08':'重阳节',
-    '2028-01-25':'除夕',
-    '2028-01-26':'春节',
-    '2028-02-09':'元宵节',
-    '2028-04-04':'清明节',
-    '2028-05-28':'端午节',
-    '2028-08-26':'七夕',
-    '2028-10-03':'中秋节',
-    '2028-10-26':'重阳节',
-    '2029-02-12':'除夕',
-    '2029-02-13':'春节',
-    '2029-02-27':'元宵节',
-    '2029-04-04':'清明节',
-    '2029-06-16':'端午节',
-    '2029-08-16':'七夕',
-    '2029-09-22':'中秋节',
-    '2029-10-16':'重阳节',
-    '2030-02-02':'除夕',
-    '2030-02-03':'春节',
-    '2030-02-17':'元宵节',
-    '2030-04-05':'清明节',
-    '2030-06-05':'端午节',
-    '2030-08-05':'七夕',
-    '2030-09-12':'中秋节',
-    '2030-10-05':'重阳节',
-    '2031-01-22':'除夕',
-    '2031-01-23':'春节',
-    '2031-02-06':'元宵节',
-    '2031-04-05':'清明节',
-    '2031-06-24':'端午节',
-    '2031-08-24':'七夕',
-    '2031-10-01':'中秋节',
-    '2031-10-24':'重阳节',
-    '2032-02-10':'除夕',
-    '2032-02-11':'春节',
-    '2032-02-25':'元宵节',
-    '2032-04-04':'清明节',
-    '2032-06-12':'端午节',
-    '2032-08-12':'七夕',
-    '2032-09-19':'中秋节',
-    '2032-10-12':'重阳节',
-    '2033-01-30':'除夕',
-    '2033-01-31':'春节',
-    '2033-02-14':'元宵节',
-    '2033-04-04':'清明节',
-    '2033-06-01':'端午节',
-    '2033-08-01':'七夕',
-    '2033-09-08':'中秋节',
-    '2033-10-01':'重阳节',
-    '2034-02-18':'除夕',
-    '2034-02-19':'春节',
-    '2034-03-05':'元宵节',
-    '2034-04-05':'清明节',
-    '2034-06-20':'端午节',
-    '2034-08-20':'七夕',
-    '2034-09-27':'中秋节',
-    '2034-10-20':'重阳节',
-    '2035-02-07':'除夕',
-    '2035-02-08':'春节',
-    '2035-02-22':'元宵节',
-    '2035-04-05':'清明节',
-    '2035-06-10':'端午节',
-    '2035-08-10':'七夕',
-    '2035-09-16':'中秋节',
-    '2035-10-09':'重阳节'
-  };
+  // 公历节日按 MM-DD 年年生效；农历节日（除夕/春节…重阳）由上面同一套农历表实时推算，
+  // 不再维护逐年对照表——以前那份只写到 2035，往后就不显示了。
+  // 自定义节日：往 FLOW_SOLAR_FEST 加 'MM-DD':'名称'。
+  // 农历短名在流水里补「节」字（元宵→元宵节），与日历格子的窄文案保持一致。
+  var FLOW_FEST_LONG = { '清明': '清明节', '元宵': '元宵节', '端午': '端午节', '中秋': '中秋节', '重阳': '重阳节' };
   var FLOW_SOLAR_FEST = {
     '01-01':'元旦',
     '02-14':'情人节',
@@ -4208,13 +4384,29 @@ try {
     '12-25':'圣诞节',
     '12-31':'跨年夜'
   };
+  var flowFestCache = {};
+  function flowFestOf(y, m, d) {
+    var dt = new Date(y, m - 1, d);
+    var lu = lunarOf(dt);
+    var f = festOf(dt, lu);
+    if (!f && lu) {
+      /* 除夕：次日是正月初一（闰月不算） */
+      var nx = lunarOf(new Date(y, m - 1, d + 1));
+      if (nx && nx.month === 1 && nx.day === 1 && !nx.leap) f = '除夕';
+    }
+    return f ? (FLOW_FEST_LONG[f] || f) : '';
+  }
   function flowDateInfo(dstr) {
     var p = String(dstr || '').split('-');
     if (p.length < 3) return { label: String(dstr || ''), fest: '' };
     var mm = p[1].length < 2 ? '0' + p[1] : p[1];
     var dd = p[2].length < 2 ? '0' + p[2] : p[2];
     var full = p[0] + '-' + mm + '-' + dd;
-    var f = FLOW_LUNAR_FEST[full] || FLOW_SOLAR_FEST[mm + '-' + dd] || '';
+    var f = FLOW_SOLAR_FEST[mm + '-' + dd] || '';
+    if (!f) {
+      if (!(full in flowFestCache)) flowFestCache[full] = flowFestOf(+p[0], +p[1], +p[2]);
+      f = flowFestCache[full];
+    }
     return { label: f ? p[0] + '-' + f : full, fest: f };
   }
 
@@ -4616,6 +4808,7 @@ try {
     if (g === chartGrain) return;
     chartGrain = g;
     renderChart();
+    renderCategory();          /* 环形图与柱折线图联动：粒度变化时同步统计范围 */
   });
 
   /* ---- 日历显示设置 ---- */
@@ -4894,12 +5087,19 @@ try {
     var sel = dateField.value || isoDate(today);
     var minStr = dateField.getAttribute('min') || '', maxStr = dateField.getAttribute('max') || '';
     var tStr = isoDate(today);
+    /* 翻月按钮按可选范围收口：到 max 所在月就禁用「›」。
+       记账入口不传日期时 max = 今天，以前「›」照样能翻到下月，
+       翻过去整月都是灰的，像坏了一样。 */
+    var curIdx = monthIndex(dpopY, dpopM);
+    var maxIdx = maxStr ? monthIndex(+maxStr.slice(0, 4), +maxStr.slice(5, 7)) : Infinity;
+    var prevDis = curIdx <= minMonthIndex(), nextDis = curIdx >= maxIdx;
     var startDow = (new Date(dpopY, dpopM - 1, 1).getDay() + 6) % 7;   // 周一为首
     var head = '<div class="dpop-head"><div class="dpop-title">' + dpopY + ' 年 <span>' + dpopM + ' 月</span></div>' +
       '<div class="dpop-nav">' +
       '<button class="dpop-btn" type="button" data-nav="-1" aria-label="上个月"' +
-      (monthIndex(dpopY, dpopM) <= minMonthIndex() ? ' disabled' : '') + '>‹</button>' +
-      '<button class="dpop-btn" type="button" data-nav="1" aria-label="下个月">›</button>' +
+      (prevDis ? ' disabled' : '') + '>‹</button>' +
+      '<button class="dpop-btn" type="button" data-nav="1" aria-label="下个月"' +
+      (nextDis ? ' disabled' : '') + '>›</button>' +
       '</div></div>';
     var cells = ['一', '二', '三', '四', '五', '六', '日'].map(function (t) {
       return '<span class="dpop-dow">' + t + '</span>';
@@ -4982,6 +5182,8 @@ try {
     if (t.hasAttribute('data-nav')) {
       var idx = monthIndex(dpopY, dpopM) + (+t.getAttribute('data-nav'));
       if (idx < minMonthIndex()) return;
+      var maxAttr = dateField.getAttribute('max');
+      if (maxAttr && idx > monthIndex(+maxAttr.slice(0, 4), +maxAttr.slice(5, 7))) return;
       dpopY = Math.floor(idx / 12); dpopM = idx % 12 + 1;
       renderDatePop(); dpopPlace(); return;
     }
@@ -5270,6 +5472,7 @@ try {
     });
     b.classList.add('is-sel');
     renderDayPanel();
+    if (chartGrain === 'day') renderCategory();   /* 日粒度下环形图跟着选中日切换 */
     calTipDay = d;
     showChartTipForDay(d);
   });
@@ -5404,8 +5607,44 @@ try {
     sync();
   })();
 
+  /* 收支卡片显示开关：**只属于手机 App**。桌面端 / 局域网页面不出现这条设置，
+     KPI 卡片与环形图始终按原样显示（节点保留、整行隐藏，避免影响浮窗布局）。
+     App 内是纯界面偏好，记在浏览器本地，不写入 ledger.db：默认关闭，
+     关掉后主屏的收支 KPI 与两个环形图隐藏；若账户里有负余额，
+     异常账户卡仍然单张显示并铺满整行（宽度由 CSS 的 has-bad 规则控制）。 */
+  (function () {
+    var KEY = 'genoffice.ledger.showKpi.v1';
+    var chk = document.getElementById('showKpiChk');
+    if (!chk) return;
+    if (!IS_APP) {
+      var row = chk.parentNode;
+      if (row && row.style) row.style.display = 'none';
+      document.body.classList.remove('hide-kpi');
+      chk.checked = true;
+      return;
+    }
+    var shown = false;
+    try {
+      var v = localStorage.getItem(KEY);
+      if (v !== null) shown = v === '1';
+    } catch (e) {}
+    function apply(remeasure) {
+      document.body.classList.toggle('hide-kpi', !shown);
+      chk.checked = shown;
+      /* 隐藏状态下量不到异常账户列表的行高，重新显示时补一次渲染把限高量准 */
+      if (remeasure) renderKPI();
+    }
+    chk.addEventListener('change', function () {
+      shown = chk.checked;
+      try { localStorage.setItem(KEY, shown ? '1' : '0'); } catch (e) {}
+      apply(true);
+    });
+    apply(false);
+  })();
+
   /* 账户明细显示开关：纯界面偏好，记在浏览器本地，不写入 ledger.db；
-     关闭时连「账户」标题一起隐藏，打开后区块仍保持可折叠。 */
+     关闭时连「账户」标题一起隐藏，打开后区块仍保持可折叠。
+     打开时顺手收起设置浮窗、展开账户表并滚到账户标题；关闭时不做任何跳转。 */
   (function () {
     var KEY = 'genoffice.ledger.showAccounts.v1';
     var sec = document.getElementById('acctSec');
@@ -5413,6 +5652,18 @@ try {
     if (!sec || !chk) return;
     var shown = false;
     try { shown = localStorage.getItem(KEY) === '1'; } catch (e) {}
+    /* 定位到账户区：吸顶栏会盖住标题，滚动时把它的高度留出来 */
+    function revealAcct() {
+      var bar = document.querySelector('.topbar');
+      var pad = (bar ? bar.getBoundingClientRect().height : 0) + 10;
+      var run = window.requestAnimationFrame || function (f) { setTimeout(f, 16); };
+      run(function () {
+        var yOff = window.pageYOffset || document.documentElement.scrollTop || 0;
+        var y = Math.max(0, sec.getBoundingClientRect().top + yOff - pad);
+        try { window.scrollTo({ top: y, behavior: 'smooth' }); }
+        catch (e) { window.scrollTo(0, y); }
+      });
+    }
     function apply() {
       sec.classList.toggle('is-hidden', !shown);
       chk.checked = shown;
@@ -5422,19 +5673,30 @@ try {
       shown = chk.checked;
       try { localStorage.setItem(KEY, shown ? '1' : '0'); } catch (e) {}
       apply();
+      if (!shown) return;              /* 关：只隐藏，不做任何定位动作 */
+      /* 开：设置浮窗通常会盖住正文，先收起来；再展开账户表并定位到标题 */
+      var pop = document.getElementById('topSetPop');
+      var setBtn = document.getElementById('topSetBtn');
+      if (pop) pop.hidden = true;
+      if (setBtn) setBtn.setAttribute('aria-expanded', 'false');
+      sec.classList.remove('is-collapsed');
+      var tgl = document.getElementById('acctToggle');
+      if (tgl) { tgl.setAttribute('aria-expanded', 'true'); tgl.title = '收起账户明细'; }
+      lockAcctRows();
+      revealAcct();
     });
     apply();
   })();
 
   /* 分类占比摘要显示开关：纯界面偏好，记在浏览器本地，不写入 ledger.db。
-     与另外两个设置开关一致，默认关闭；用户改过之后以本地缓存为准。
+     与另外三个设置开关一致，默认关闭；用户改过之后以本地缓存为准。
      关掉后对比图的「前 3 大类 / 来源占比」条与分类明细视图顶部的
      同类摘要一起隐藏，切换视图时也不会重新冒出来。 */
   (function () {
     var KEY = 'genoffice.ledger.showVizSummary.v1';
     var chk = document.getElementById('showSummaryChk');
     if (!chk) return;
-    /* 三个设置开关一律默认关闭，不区分设备版与浏览器；用户改过之后以本地缓存为准 */
+    /* 四个设置开关一律默认关闭，不区分设备版与浏览器；用户改过之后以本地缓存为准 */
     var shown = false;
     try {
       var v = localStorage.getItem(KEY);
@@ -5863,7 +6125,9 @@ try {
   }
   /* 初始数据库结构里的「基础数据」：与 ledger_server.py 的 DEFAULT_ACCOUNTS 保持一致——
      5 个资产账户、note「余额」、金额一律 0。用 INSERT OR IGNORE，
-     脚本在已有账本上重复执行也不会因主键冲突中断。 */
+     脚本在已有账本上重复执行也不会因主键冲突中断。
+     注：「清空记录」已改为删库重建，由服务端 init_db() 预置这 5 个账户；
+     resetAccountsToDefault() 仅留作 JS 侧初始账户结构的单一来源。 */
   var INIT_ACCOUNTS = [
     ['a1', '支付宝'], ['a2', '微信'], ['a3', '现金'],
     ['a4', '宁波银行卡'], ['a5', '江苏银行卡']
@@ -5925,9 +6189,17 @@ try {
   /* 危险操作统一二次确认：导入 JSON（整本覆盖）/ 清空记录（删全部流水）都走这里 */
   var confirmModal = document.getElementById('confirmModal');
   var confirmAction = null;
-  function askConfirm(title, sub, onOk) {
-    document.getElementById('confirmTitle').textContent = title;
-    document.getElementById('confirmSub').textContent = sub;
+  /* opts（可选）：{ html: sub 允许带标记, center: 标题居中, swap: 两个按钮等宽并交换位置 } */
+  function askConfirm(title, sub, onOk, opts) {
+    opts = opts || {};
+    var titleEl = document.getElementById('confirmTitle');
+    var subEl = document.getElementById('confirmSub');
+    var card = confirmModal.querySelector('.sql-modal');
+    var acts = confirmModal.querySelector('.confirm-actions');
+    titleEl.textContent = title;
+    if (opts.html) subEl.innerHTML = sub; else subEl.textContent = sub;
+    if (card) card.classList.toggle('is-center', !!opts.center);
+    if (acts) acts.classList.toggle('is-swap', !!opts.swap);
     confirmAction = onOk;
     confirmModal.hidden = false;
   }
@@ -6036,12 +6308,19 @@ try {
     if (txt) applyImportText(txt);
   };
   window.__etsToast = function (msg) { toast(msg); };
+  /* 账本路径只给用户看相对位置：手机上的 /storage/emulated/0/ 前缀人人一样、
+     又把后面真正有用的目录挤到换行，所以统一截掉，从 0/ 之后再显示。 */
+  function shortDbPath(p) {
+    var s = String(p == null ? '' : p).replace(/^file:\/\//, '');
+    s = s.replace(/^\/storage\/emulated\/\d+\//, '');
+    s = s.replace(/^\/sdcard\//, '');
+    return s;
+  }
   window.__etsDbPath = function (p) {
-    var el = document.getElementById('appDbPath');
-    if (!el || !p) return;
-    var sp = el.querySelector('span');
-    if (sp) sp.textContent = p;
-    el.hidden = false;
+    if (!p) return;
+    /* 信息卡里的账本绝对路径（卸载提示与路径合一，避免重复行） */
+    var kp = document.getElementById('keepDataPath');
+    if (kp) kp.textContent = shortDbPath(p);
   };
   if (IS_APP && ETS && ETS.dbPath) {
     try { window.__etsDbPath(ETS.dbPath()); } catch (e) {}
@@ -6067,31 +6346,97 @@ try {
       '清空全部流水，账户恢复为 5 个初始账户（支付宝 / 微信 / 现金 / 宁波银行卡 / 江苏银行卡），余额全部归零；自建账户会被移除。此操作不可撤销，建议先「导出 JSON」备份。',
       function () {
         if (!remoteOK) { toast('数据库(ledger.db)丢失，请恢复或重启服务将重新初始化数据'); return; }
-        store.records = [];
-        resetAccountsToDefault();
-        /* 账户筛选 / 流水查询也回到初始态，免得残留一个已不存在的账户名 */
-        flowAcctFilter = '';
-        var fq = document.getElementById('flowQuery');
-        if (fq) fq.value = '';
-        save();
-        view.expanded = false;
-        if (!LOCK_TODAY) { view.y = today.getFullYear(); view.m = today.getMonth() + 1; view.day = today.getDate(); }
-        renderAll();
-        toast('已清空：流水 0 条，5 个初始账户余额均为 0');
+        /* 不是 DELETE 表内容，而是直接删掉 ledger.db 整组并重建初始库：
+           文件从几百 KB 真正缩回约 40KB，连 WAL / 旧数据页一起清掉。
+           必须先掐掉在途的自动保存（旧快照会在删库后写回，把数据复活）。 */
+        clearTimeout(pushTimer);
+        if (pendingPushResolve) { var prev = pendingPushResolve; pendingPushResolve = null; prev(false); }
+        var btn = document.getElementById('clearBtn');
+        if (btn) { btn.disabled = true; btn.textContent = '正在重建…'; }
+        suppressPush = true;
+        fetch(API_BASE + '/api/reset-db', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+        }).then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        }).then(function (data) {
+          store = normalize(data);
+          /* 账户筛选 / 流水查询也回到初始态，免得残留一个已不存在的账户名 */
+          flowAcctFilter = '';
+          var fq = document.getElementById('flowQuery');
+          if (fq) fq.value = '';
+          view.expanded = false;
+          if (!LOCK_TODAY) { view.y = today.getFullYear(); view.m = today.getMonth() + 1; view.day = today.getDate(); }
+          renderAll();
+          if (btn) { btn.disabled = false; btn.textContent = '清空记录'; }
+          toast('已清空：ledger.db 已重建，流水 0 条，5 个初始账户余额均为 0');
+        }).catch(function (err) {
+          suppressPush = false;
+          if (btn) { btn.disabled = false; btn.textContent = '清空记录'; }
+          remoteOK = false;
+          renderBrand(); renderFooter();
+          toast('重建 ledger.db 失败：' + (err && err.message ? err.message : err));
+        }).finally(function () { suppressPush = false; });
       });
   });
 
-  /* 设备版设置里的「卸载应用（默认保留数据）」：浏览器 / 桌面端整段隐藏。
-     点确定才调原生卸载，原生侧会先把 ledger.db 备份到公共 Download/鱼记备份/。 */
+  /* 设备版设置里的「卸载后保留数据」开关（默认开，关闭需二次确认 + 说明）。
+     账本在公共「文档/Documents/cn.yuledger.app」，系统卸载不会删这个文件夹：
+       · 开（默认）：卸载后重装直接加载原账本；
+       · 关：下次卸载后重装会清除公共目录里的账本并初始化新库，随后自动恢复默认开启（关是一次性指令）。
+     开关状态以原生 ETS.getKeepData/setKeepData（公共 keep-data.flag）为准，
+     localStorage 仅作 UI 缓存。浏览器 / 桌面端整段隐藏。 */
   (function () {
     var sec = document.getElementById('uninstallSec');
-    var btn = document.getElementById('uninstallAppBtn');
-    if (!sec || !btn || !IS_APP || !ETS || !ETS.uninstallApp) return;
+    var chk = document.getElementById('keepDataChk');
+    var stateEl = document.getElementById('keepDataState');
+    var effectEl = document.getElementById('keepDataEffect');
+    if (!sec || !chk || !IS_APP || !ETS || !ETS.getKeepData || !ETS.setKeepData) return;
     sec.hidden = false;
-    btn.addEventListener('click', function () {
-      askConfirm('卸载鱼记？',
-        '点「确定」会先把当前账本备份到公共 Download/鱼记备份/，再调起系统卸载窗口；重装后自动恢复。若不想保留数据，请从系统设置中卸载。',
-        function () { ETS.uninstallApp(true); });
+    var KEY = 'keepDataOnUninstall', keep = true;
+    var pathEl = document.getElementById('keepDataPath');
+    function dbPath() { return pathEl ? (pathEl.textContent || '') : ''; }
+    try {
+      var v = localStorage.getItem(KEY);
+      if (v !== null) keep = v === '1' || v === 'true';
+    } catch (e) {}
+    try { keep = !!ETS.getKeepData(); } catch (e) {}   /* 原生 flag 为准 */
+    function sync() {
+      chk.checked = keep;
+      if (stateEl) {
+        stateEl.textContent = keep ? '开（默认）' : '关';
+        stateEl.classList.toggle('is-off', !keep);
+      }
+      if (effectEl) {
+        effectEl.classList.toggle('is-off', !keep);
+        /* 「不会」用收入绿、「将会」用支出红；圆点颜色随开/关切换。
+           开态一句话读到底（不换行），关态分两行强调「再次安装是空账本」 */
+        effectEl.innerHTML = keep
+          ? '<span class="ki-dot"></span><span>卸载应用<span class="ki-hi">不会</span>删除数据，再次安装即可加载账本</span>'
+          : '<span class="ki-dot"></span><span>卸载应用<span class="ki-hi">将会</span>删除账本；<br>再次安装为初始空账本</span>';
+      }
+    }
+    sync();
+    chk.addEventListener('change', function () {
+      if (!chk.checked && keep) {                 /* 从「开」拨到「关」：二次确认 + 说明 */
+        chk.checked = true;                        /* 先回滚，确认后才真正关闭 */
+        askConfirm('确定关闭「保留数据」设置吗？',
+          '<span class="cf-item cf-lead">关闭时，卸载 app 后记账数据将全部丢失！</span>' +
+          '<span class="cf-item">当前账本存于「内部存储」<br>' +
+          '<span class="cf-path">「' + esc(dbPath()) + '」</span></span>' +
+          '<span class="cf-item">点击「<span class="cf-hi">导出 JSON</span>」进行手动备份。</span>',
+          function () {
+            keep = false;
+            try { localStorage.setItem(KEY, '0'); } catch (e) {}
+            try { if (ETS.setKeepData(false) === false) toast('设置保存失败，请检查文件访问权限'); } catch (e) {}
+            sync();
+          }, { html: true, center: true, swap: true });
+        return;
+      }
+      keep = chk.checked;
+      try { localStorage.setItem(KEY, keep ? '1' : '0'); } catch (e) {}
+      try { ETS.setKeepData(keep); } catch (e) {}
+      sync();
     });
   })();
 
